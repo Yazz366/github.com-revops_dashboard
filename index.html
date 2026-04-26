@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stllr RevOps</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f3f2ee;--sf:#fff;--sf2:#eeede8;--sf3:#e3e2da;
+  --bd:rgba(0,0,0,.08);--bds:rgba(0,0,0,.16);
+  --tx:#15150e;--tx2:#55544b;--tx3:#8d8c7c;
+  --blue:#2575c8;--bluebg:#e0eefb;--bluedk:#07387a;
+  --green:#4f8f13;--greenbg:#e4f0d5;--greendk:#1f3f07;
+  --amber:#ae6c10;--amberbg:#fae7cf;--amberdk:#582f02;
+  --red:#c83c3c;--redbg:#fae4e4;--reddk:#681818;
+  --teal:#147a5e;--tealbg:#d9f0e6;--tealdk:#043d2d;
+  --purple:#6058c4;--purplebg:#e8e7fb;--purpledk:#2b2680;
+  --sidebar:218px;--r:6px;--rl:10px;
+}
+[data-dark]{
+  --bg:#0f0f0e;--sf:#1a1a18;--sf2:#212120;--sf3:#292926;
+  --bd:rgba(255,255,255,.07);--bds:rgba(255,255,255,.14);
+  --tx:#eeeee8;--tx2:#94928a;--tx3:#585750;
+  --bluebg:#0a2540;--bluedk:#6aacee;
+  --greenbg:#122404;--greendk:#7ab83a;
+  --amberbg:#251802;--amberdk:#d89030;
+  --redbg:#250c0c;--reddk:#e87070;
+  --tealbg:#051d12;--tealdk:#44c890;
+  --purplebg:#130f5c;--purpledk:#9e98ee;
+}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--tx);font-size:13px;line-height:1.5;min-height:100vh}
+.app{display:grid;grid-template-columns:var(--sidebar) 1fr;min-height:100vh}
+.main{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sb{background:var(--sf);border-right:.5px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-logo{padding:15px 14px 11px;border-bottom:.5px solid var(--bd)}
+.sb-logo h1{font-size:13px;font-weight:700;letter-spacing:-.2px}
+.sb-logo p{font-size:10px;color:var(--tx3);margin-top:1px}
+.sb-nav{padding:7px 6px;flex:1}
+.ss{font-size:9px;font-weight:700;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase;padding:9px 8px 4px}
+.nb{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--r);cursor:pointer;color:var(--tx2);font-size:12px;border:none;background:none;width:100%;text-align:left;font-family:inherit;font-weight:500;transition:all .1s}
+.nb:hover{background:var(--sf2);color:var(--tx)}
+.nb.on{background:var(--bluebg);color:var(--bluedk);font-weight:600}
+.nb svg{width:14px;height:14px;flex-shrink:0;opacity:.8}
+.sb-foot{padding:10px;border-top:.5px solid var(--bd);display:flex;flex-direction:column;gap:6px}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--sf);border-bottom:.5px solid var(--bd);padding:10px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:30;gap:10px;flex-wrap:wrap}
+.topbar-l h2{font-size:13px;font-weight:700}
+.topbar-l p{font-size:10px;color:var(--tx3)}
+.topbar-r{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+
+/* ── BUTTONS ── */
+.btn{padding:5px 12px;border-radius:var(--r);font-size:12px;cursor:pointer;border:.5px solid var(--bds);background:var(--sf);color:var(--tx);font-family:inherit;font-weight:500;transition:all .1s;white-space:nowrap}
+.btn:hover{background:var(--sf2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:var(--tx);color:var(--sf);border-color:var(--tx)}
+.btn-p:hover:not(:disabled){opacity:.8}
+.btn-ok{background:var(--greenbg);color:var(--greendk);border-color:transparent}
+.btn-ok:hover:not(:disabled){background:#d4e8c2}
+.btn-d{background:var(--redbg);color:var(--reddk);border-color:transparent}
+.btn-sm{padding:3px 9px;font-size:11px}
+
+/* ── INPUTS ── */
+.inp{padding:6px 10px;border:.5px solid var(--bds);border-radius:var(--r);font-size:12px;background:var(--sf);color:var(--tx);font-family:inherit;outline:none;transition:border-color .1s}
+.inp:focus{border-color:var(--blue)}
+.inp.err{border-color:var(--red)}
+
+/* ── LAYOUT ── */
+.content{padding:14px 16px;flex:1;overflow:auto}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.mc{background:var(--sf);border:.5px solid var(--bd);border-radius:var(--r);padding:11px 13px}
+.mc .v{font-size:20px;font-weight:700}
+.mc .l{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.mc .d{font-size:10px;margin-top:2px}
+.dup{color:var(--green)}.ddn{color:var(--red)}
+.card{background:var(--sf);border:.5px solid var(--bd);border-radius:var(--rl);padding:13px;margin-bottom:11px}
+.ct{font-size:11px;font-weight:700;color:var(--tx);margin-bottom:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+.ch{position:relative;height:200px}
+.sec{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
+
+/* ── BADGES ── */
+.badge{font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700;white-space:nowrap;display:inline-block}
+.bp{background:var(--purplebg);color:var(--purpledk)}
+.bpg{background:var(--tealbg);color:var(--tealdk)}
+.bi{background:var(--amberbg);color:var(--amberdk)}
+.stb{font-size:9px;padding:2px 6px;border-radius:8px;font-weight:600;white-space:nowrap;display:inline-block}
+.st-on{background:var(--greenbg);color:var(--greendk)}
+.st-risk{background:var(--amberbg);color:var(--amberdk)}
+.st-block{background:var(--redbg);color:var(--reddk)}
+
+/* ── WEEK DROPDOWN ── */
+.wk-dd-wrap{position:relative;display:inline-block}
+.wk-dd-btn{display:flex;align-items:center;gap:8px;padding:5px 11px;border-radius:var(--r);border:.5px solid var(--bds);background:var(--sf);color:var(--tx);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;min-width:150px;justify-content:space-between;transition:all .1s}
+.wk-dd-btn:hover{background:var(--sf2)}
+.wk-dd-btn .arr{font-size:9px;opacity:.5;transition:transform .15s;flex-shrink:0}
+.wk-dd-btn.open .arr{transform:rotate(180deg)}
+.wk-dd-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:240px;background:var(--sf);border:.5px solid var(--bds);border-radius:var(--rl);box-shadow:0 6px 24px rgba(0,0,0,.14);z-index:50;display:none;overflow:hidden}
+.wk-dd-menu.open{display:block}
+.wk-dd-item{display:flex;align-items:center;gap:6px;padding:7px 10px;font-size:12px;color:var(--tx2);transition:background .1s}
+.wk-dd-item:hover{background:var(--sf2)}
+.wk-dd-item.on{background:var(--bluebg);color:var(--bluedk);font-weight:600}
+.wk-dd-item.new-wk{color:var(--bluedk);font-weight:600;border-top:.5px solid var(--bd);cursor:pointer;padding:8px 10px}
+.wk-dd-item.new-wk:hover{background:var(--bluebg)}
+.wk-item-name{flex:1;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk-done-tag{font-size:9px;padding:1px 6px;border-radius:6px;background:var(--greenbg);color:var(--greendk);font-weight:600;flex-shrink:0}
+.wk-acts{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .1s}
+.wk-dd-item:hover .wk-acts{opacity:1}
+.wk-act-btn{background:none;border:none;cursor:pointer;padding:2px 5px;border-radius:3px;font-size:11px;color:var(--tx3);font-family:inherit;line-height:1;transition:all .1s}
+.wk-act-btn:hover{background:var(--sf3);color:var(--tx)}
+.wk-act-btn.del:hover{background:var(--redbg);color:var(--reddk)}
+
+/* ── SHEET TABLE ── */
+.sheet-outer{overflow-x:auto;border:.5px solid var(--bd);border-radius:var(--rl);background:var(--sf)}
+.sheet-tbl{border-collapse:collapse;font-size:11px;white-space:nowrap}
+.sheet-tbl .h-am td{padding:5px 10px;background:#1a2e52;color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border:.5px solid rgba(255,255,255,.12);text-align:center}
+[data-dark] .sheet-tbl .h-am td{background:#0d1e3a}
+.sheet-tbl .h-sol td{padding:4px 10px;font-size:9px;font-weight:700;text-align:center;border:.5px solid var(--bd)}
+.sol-premier{background:var(--purplebg);color:var(--purpledk)}
+.sol-influencer{background:var(--amberbg);color:var(--amberdk)}
+.sol-payg{background:var(--tealbg);color:var(--tealdk)}
+.sol-blank{background:var(--sf2)}
+.sheet-tbl .h-status td{padding:3px 10px;font-size:9px;text-align:center;border:.5px solid var(--bd);color:var(--tx3)}
+.sheet-tbl .h-brand td{padding:6px 10px;background:var(--sf2);font-size:11px;font-weight:700;text-align:center;border:.5px solid var(--bd);color:var(--tx)}
+.sheet-tbl .h-brand td.lbl{text-align:left;min-width:210px;background:var(--sf3);font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--tx3)}
+.sheet-tbl .stage-row td{padding:5px 10px;border:.5px solid var(--bd);text-align:center;vertical-align:middle;min-width:68px}
+.sheet-tbl .stage-row td.lbl{text-align:left;min-width:210px;font-weight:600;font-size:11px;color:var(--tx2);background:var(--sf);padding-left:14px}
+.sheet-tbl .stage-row:hover td:not(.lbl){background:var(--bluebg)}
+.sheet-inp{width:38px;text-align:center;background:transparent;border:none;font-family:inherit;font-size:11px;font-weight:700;color:var(--tx);outline:none;padding:0}
+.sheet-inp:focus{background:var(--bluebg);border-radius:3px;color:var(--bluedk)}
+.cv-0{color:var(--tx3);font-weight:400}
+.cv-pos{display:inline-block;min-width:22px;background:var(--bluebg);color:var(--bluedk);border-radius:4px;padding:1px 4px;font-weight:700;text-align:center}
+.sheet-tbl .total-row td{padding:6px 10px;background:var(--sf2);font-size:11px;font-weight:700;text-align:center;border:.5px solid var(--bd);color:var(--tx)}
+.sheet-tbl .total-row td.lbl{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)}
+.sheet-tbl .pct-row td{padding:4px 10px;font-size:10px;text-align:center;border:.5px solid var(--bd);color:var(--tx3);font-weight:500}
+.sheet-tbl .pct-row td.lbl{text-align:left;font-size:9px}
+td.grand{background:var(--sf2);font-weight:700;border-left:.5px solid var(--bds) !important}
+
+/* ── PIPELINE BARS ── */
+.pip{display:grid;grid-template-columns:165px 1fr 36px 42px;gap:6px;align-items:center;padding:4px 0;border-bottom:.5px solid var(--bd)}
+.pip:last-child{border:none}
+.piplabel{font-size:11px;color:var(--tx2)}
+.pipbg{height:5px;background:var(--sf2);border-radius:3px;overflow:hidden}
+.pipfill{height:100%;border-radius:3px}
+.pipn{font-size:11px;font-weight:600;text-align:right}
+.pipp{font-size:10px;color:var(--tx3);text-align:right}
+
+/* ── PROGRESS ── */
+.prog-o{height:5px;background:var(--sf2);border-radius:3px;overflow:hidden}
+.prog-i{height:100%;border-radius:3px}
+
+/* ── KANBAN ── */
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kcol{background:var(--sf2);border-radius:var(--rl);padding:10px;min-height:180px}
+.khead{font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.kct{background:var(--sf);border-radius:8px;padding:1px 7px;font-size:10px;color:var(--tx3)}
+.kcard{background:var(--sf);border:.5px solid var(--bd);border-radius:var(--r);padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:border-color .1s}
+.kcard:hover{border-color:var(--bds)}
+.kbrand{font-size:9px;font-weight:700;color:var(--bluedk);background:var(--bluebg);padding:1px 5px;border-radius:6px;display:inline-block;margin-bottom:3px}
+.kdesc{font-size:11px;color:var(--tx);line-height:1.4;margin-bottom:4px}
+.kfoot{display:flex;justify-content:space-between;align-items:center}
+.av{width:17px;height:17px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:700}
+.av-hg{background:var(--purplebg);color:var(--purpledk)}
+.av-kb{background:var(--bluebg);color:var(--bluedk)}
+.av-ay{background:var(--greenbg);color:var(--greendk)}
+.due-ov{color:var(--reddk);font-size:9px;font-weight:600}
+.due-td{color:var(--amberdk);font-size:9px;font-weight:600}
+.due-ok{color:var(--tx3);font-size:9px}
+.prio-h{color:var(--reddk);font-size:9px;font-weight:700}
+.prio-n{color:var(--tx3);font-size:9px}
+
+/* ── TOGGLE ── */
+.tog-wrap{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2)}
+.tog{width:30px;height:16px;border-radius:8px;background:var(--sf3);border:.5px solid var(--bds);cursor:pointer;position:relative;transition:background .18s;flex-shrink:0}
+.tog.on{background:var(--blue)}
+.tog::after{content:'';position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:left .14s;box-shadow:0 1px 2px rgba(0,0,0,.22)}
+.tog.on::after{left:15px}
+
+/* ── MODALS ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:100;align-items:center;justify-content:center}
+.ov.open{display:flex}
+.modal{background:var(--sf);border-radius:var(--rl);padding:20px;width:460px;max-width:95vw;border:.5px solid var(--bd);box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal h2{font-size:14px;font-weight:700;margin-bottom:3px}
+.modal p{font-size:11px;color:var(--tx2);margin-bottom:14px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.fg{margin-bottom:9px}
+.fl{font-size:10px;font-weight:600;color:var(--tx2);margin-bottom:4px;display:block}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.field-err{font-size:10px;color:var(--reddk);margin-top:4px;display:none}
+
+/* ── PRESETS ── */
+.presets{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:2px}
+.chip{padding:3px 9px;border-radius:12px;border:.5px solid var(--bds);background:var(--sf2);color:var(--tx2);font-size:11px;cursor:pointer;font-family:inherit;transition:all .1s}
+.chip:hover{background:var(--sf3);color:var(--tx)}
+
+/* ── ALERTS ── */
+.alert{padding:8px 12px;border-radius:var(--r);font-size:11px;margin-bottom:10px}
+.a-info{background:var(--bluebg);color:var(--bluedk)}
+.a-ok{background:var(--greenbg);color:var(--greendk)}
+.a-warn{background:var(--amberbg);color:var(--amberdk)}
+
+/* ── EXPORT MODAL ── */
+.export-list{max-height:260px;overflow-y:auto;border:.5px solid var(--bd);border-radius:var(--r);margin-bottom:12px}
+.ex-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:.5px solid var(--bd);cursor:pointer;transition:background .1s}
+.ex-row:last-child{border:none}
+.ex-row:hover{background:var(--sf2)}
+.ex-row input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--blue);flex-shrink:0}
+.ex-info{flex:1}
+.ex-label{font-size:12px;font-weight:600;color:var(--tx)}
+.ex-meta{font-size:10px;color:var(--tx3);margin-top:1px}
+.ex-tag{font-size:9px;padding:1px 6px;border-radius:6px;font-weight:600;flex-shrink:0}
+.ex-sel-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:11px;color:var(--tx3)}
+.ex-sel-bar button{font-size:11px;color:var(--bluedk);background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+.ex-sel-bar button:hover{text-decoration:underline}
+
+/* ── GUIDE ── */
+.guide-row{display:grid;grid-template-columns:165px 1fr;gap:10px;align-items:start;padding:7px 0;border-bottom:.5px solid var(--bd);font-size:12px}
+.guide-row:last-child{border:none}
+
+.empty{text-align:center;padding:40px;color:var(--tx3);font-size:12px}
+.empty strong{display:block;color:var(--tx2);margin-bottom:6px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:2px}
+@media(max-width:800px){
+  .app{grid-template-columns:1fr}.sb{display:none}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .two{grid-template-columns:1fr}
+  .kanban{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+<!-- SIDEBAR -->
+<aside class="sb">
+  <div class="sb-logo">
+    <h1>Stllr RevOps</h1>
+    <p id="yr-lbl">2026 · Full Year</p>
+  </div>
+  <nav class="sb-nav">
+    <div class="ss">Operations</div>
+    <button class="nb on" data-v="daily" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M4 5h8M4 8h5M4 11h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Daily Ops
+    </button>
+    <button class="nb" data-v="taskboard" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="4" height="12" rx="1" fill="currentColor" opacity=".5"/><rect x="6" y="2" width="4" height="8" rx="1" fill="currentColor" opacity=".7"/><rect x="11" y="2" width="4" height="10" rx="1" fill="currentColor" opacity=".5"/></svg>
+      Task Board
+    </button>
+    <div class="ss">Rollups</div>
+    <button class="nb" data-v="weekly" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M1 12L5 7l3 3 3-5 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Weekly Rollup
+    </button>
+    <button class="nb" data-v="monthly" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v2M11 1v2M2 6h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Monthly Rollup
+    </button>
+    <button class="nb" data-v="quarterly" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="9" width="3" height="6" rx="1" fill="currentColor"/><rect x="5" y="5" width="3" height="10" rx="1" fill="currentColor" opacity=".7"/><rect x="9" y="2" width="3" height="13" rx="1" fill="currentColor" opacity=".5"/><rect x="13" y="7" width="3" height="8" rx="1" fill="currentColor" opacity=".4"/></svg>
+      Quarterly Rollup
+    </button>
+    <div class="ss">Reports</div>
+    <button class="nb" data-v="credits" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.3"/><rect x="3" y="9" width="3" height="1.5" rx=".5" fill="currentColor"/></svg>
+      Brand Video Credit
+    </button>
+    <button class="nb" data-v="revops-report" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 12 L5 8 L8 10 L11 5 L14 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 14h12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="5" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="10" r="1.2" fill="currentColor"/><circle cx="11" cy="5" r="1.2" fill="currentColor"/></svg>
+      RevOps Report
+    </button>
+    <button class="nb" data-v="archive" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 5h12v9a1 1 0 01-1 1H3a1 1 0 01-1-1V5zM1 2h14v3H1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Archive
+    </button>
+    <div class="ss">Help</div>
+    <button class="nb" data-v="settings" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Settings
+    </button>
+    <button class="nb" data-v="guide" onclick="nav(this)">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 5h5M5 8h5M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Guide
+    </button>
+  </nav>
+  <div class="sb-foot">
+    <button class="btn btn-p" onclick="openAddWeekModal()" style="width:100%;font-size:11px">+ New week</button>
+    <div class="tog-wrap" style="justify-content:center">
+      <span>🌙</span>
+      <div class="tog" id="dtog" onclick="toggleDark()"></div>
+      <span>Dark mode</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-l">
+      <h2 id="tb-title">Daily Ops</h2>
+      <p id="tb-sub">Stage × Brand tracker — mirrors your Google Sheet layout</p>
+    </div>
+    <div class="topbar-r" id="topbar-r"></div>
+  </div>
+  <div class="content" id="mc"></div>
+</div>
+</div>
+
+<!-- ADD WEEK MODAL -->
+<div class="ov" id="addweek-ov">
+  <div class="modal">
+    <h2>Create new week</h2>
+    <p>Give the week a unique label. Brands will be cloned from the current week with stage counts reset to zero.</p>
+    <div class="fg">
+      <label class="fl">Week label</label>
+      <input class="inp" style="width:100%" id="wk-inp" placeholder="e.g. W17 Apr 21"
+        oninput="onWkLabelInput()" onkeydown="if(event.key==='Enter')confirmAddWeek()"/>
+      <div class="field-err" id="wk-err">This label already exists.</div>
+    </div>
+    <div class="fg">
+      <label class="fl" style="margin-bottom:6px">Quick presets</label>
+      <div class="presets" id="wk-presets"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeOv('addweek-ov')">Cancel</button>
+      <button class="btn btn-p" id="wk-save-btn" onclick="confirmAddWeek()">Create week</button>
+    </div>
+  </div>
+</div>
+
+<!-- RENAME WEEK MODAL -->
+<div class="ov" id="rename-ov">
+  <div class="modal" style="width:380px">
+    <h2>Rename week</h2>
+    <p>Enter a new unique label for this week.</p>
+    <div class="fg">
+      <label class="fl">New label</label>
+      <input class="inp" style="width:100%" id="rename-inp" placeholder="e.g. W17 Apr 21"
+        oninput="onRenameLabelInput()" onkeydown="if(event.key==='Enter')confirmRename()"/>
+      <div class="field-err" id="rename-err">This label already exists.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeOv('rename-ov')">Cancel</button>
+      <button class="btn btn-p" id="rename-save" onclick="confirmRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT PICKER MODAL -->
+<div class="ov" id="export-ov">
+  <div class="modal" style="width:480px">
+    <h2>Export weeks to CSV</h2>
+    <p>Select the weeks you want to include in the downloaded file.</p>
+    <div class="ex-sel-bar">
+      <span id="export-count">0 selected</span>
+      <div style="display:flex;gap:12px">
+        <button onclick="exportSelectAll(true)">Select all</button>
+        <button onclick="exportSelectAll(false)">Deselect all</button>
+      </div>
+    </div>
+    <div class="export-list" id="export-list"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeOv('export-ov')">Cancel</button>
+      <button class="btn btn-p" id="export-dl-btn" onclick="doExport()">⬇ Download CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- BRAND MODAL -->
+<div class="ov" id="brand-ov">
+  <div class="modal">
+    <h2 id="bm-title">Add brand</h2>
+    <p>Brand appears as a new column in the Daily Ops sheet.</p>
+    <div class="fg2">
+      <div class="fg"><label class="fl">Brand name</label><input class="inp" style="width:100%" id="bm-name" placeholder="e.g. OKX"/></div>
+      <div class="fg"><label class="fl">AM</label>
+        <select class="inp" style="width:100%" id="bm-am">
+          <option value="HG">HG – Habiba</option><option value="KB">KB – Karim</option><option value="AY">AY – Yasser</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg2">
+      <div class="fg"><label class="fl">Solution</label>
+        <select class="inp" style="width:100%" id="bm-sol">
+          <option value="PREMIER">PREMIER</option><option value="PAYG">PAYG</option><option value="INFLUENCERS">INFLUENCERS</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Status</label>
+        <select class="inp" style="width:100%" id="bm-status">
+          <option value="On track">On track</option><option value="At risk">At risk</option><option value="Blocked">Blocked</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg3">
+      <div class="fg"><label class="fl">Active videos</label><input class="inp" style="width:100%" type="number" id="bm-active" min="0" value="0"/></div>
+      <div class="fg"><label class="fl">Credit videos</label><input class="inp" style="width:100%" type="number" id="bm-credit" min="0" value="0"/></div>
+      <div class="fg"><label class="fl">Total quote</label><input class="inp" style="width:100%" type="number" id="bm-total" min="0" value="0"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeOv('brand-ov')">Cancel</button>
+      <button class="btn btn-p" id="bm-save" onclick="saveBrand()">Add brand</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="ov" id="task-ov">
+  <div class="modal">
+    <h2 id="tm-title">Add task</h2>
+    <p>Assign a task with priority and deadline.</p>
+    <div class="fg2">
+      <div class="fg"><label class="fl">Brand</label><input class="inp" style="width:100%" id="tm-brand" placeholder="e.g. OKX"/></div>
+      <div class="fg"><label class="fl">AM</label>
+        <select class="inp" style="width:100%" id="tm-am">
+          <option value="HG">HG – Habiba</option><option value="KB">KB – Karim</option><option value="AY">AY – Yasser</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Task description</label><input class="inp" style="width:100%" id="tm-desc" placeholder="e.g. Follow up on edits"/></div>
+    <div class="fg3">
+      <div class="fg"><label class="fl">Priority</label>
+        <select class="inp" style="width:100%" id="tm-prio"><option>Normal</option><option>High</option><option>Low</option></select>
+      </div>
+      <div class="fg"><label class="fl">Due date</label><input class="inp" style="width:100%" type="date" id="tm-due"/></div>
+      <div class="fg"><label class="fl">Status</label>
+        <select class="inp" style="width:100%" id="tm-status"><option>Pending</option><option>In Progress</option><option>Blocked</option><option>Done</option></select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><input class="inp" style="width:100%" id="tm-notes" placeholder="Context or blockers…"/></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeOv('task-ov')">Cancel</button>
+      <button class="btn btn-p" id="tm-save" onclick="saveTask()">Add task</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════════
+const STAGES = [
+  'Posted on social','Remixed','Approved','Pending approval',
+  'Reshooting / editing','Filming','Scripting','Shipment',
+  'Creative direction Setup','Creator onboarding','No creator','No brief (for this batch)'
+];
+const S_SHORT = {
+  'Posted on social':'Posted','Remixed':'Remixed','Approved':'Approved',
+  'Pending approval':'Pend.Approval','Reshooting / editing':'Reshooting',
+  'Filming':'Filming','Scripting':'Scripting','Shipment':'Shipment',
+  'Creative direction Setup':'Creative Dir.','Creator onboarding':'Onboarding',
+  'No creator':'No Creator','No brief (for this batch)':'No Brief'
+};
+const S_COLOR = {
+  'Posted on social':'#147a5e','Remixed':'#147a5e','Approved':'#4f8f13',
+  'Pending approval':'#ae6c10','Reshooting / editing':'#c83c3c','Filming':'#ae6c10',
+  'Scripting':'#6058c4','Shipment':'#2575c8','Creative direction Setup':'#6058c4',
+  'Creator onboarding':'#c44e10','No creator':'#8d8c7c','No brief (for this batch)':'#8d8c7c'
+};
+const AMS       = ['HG','KB','AY'];
+const AM_FULL   = {HG:'Habiba Gaber',KB:'Karim Bahim',AY:'Ahmed Yasser'};
+const SOL_ORDER = ['PREMIER','INFLUENCERS','PAYG'];
+const MONTHS    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const VTITLES   = {  daily:'Daily Ops',taskboard:'Task Board',weekly:'Weekly Rollup',monthly:'Monthly Rollup',quarterly:'Quarterly Rollup',credits:'Brand Video Credit','revops-report':'RevOps Report',archive:'Archive',settings:'Settings',guide:'Guide'};
+const VSUBS     = {  daily:'Stage × Brand tracker — mirrors your Google Sheet layout',taskboard:'Team tasks & follow-ups',weekly:'Week-over-week production stage breakdown',monthly:'Monthly production overview',quarterly:'Quarter-level insights & trends',credits:'Active · Credit · Total video allocation per brand','revops-report':'Video production performance across all stages & teams',archive:'Completed weeks — feeds all rollups',settings:'Workspace configuration',guide:'How to use the Stllr RevOps dashboard'};
+
+// ════════════════════════════════════════════════════
+// SEED DATA  (from real Google Sheet W16 Apr 14)
+// ════════════════════════════════════════════════════
+function makeSeed() {
+  return {
+    id:'seed1', label:'W16 Apr 14', year:2026, weekNum:16, completed:false, completedAt:null,
+    brands:[
+      {id:'b1', name:'Adrian',       am:'KB', solution:'PREMIER',     status:'On track', active:22, credit:35, total:57,  stages:{  'Posted on social':0,'Remixed':30,'Approved':1,'Pending approval':0,'Reshooting / editing':0,'Filming':1,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':1,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b2', name:'ParkVille',    am:'KB', solution:'INFLUENCERS', status:'On track', active:10, credit:5,  total:15,  stages:{  'Posted on social':4,'Remixed':35,'Approved':4,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b3', name:'Maison Safqa', am:'KB', solution:'PREMIER',     status:'On track', active:10, credit:5,  total:15,  stages:{  'Posted on social':0,'Remixed':16,'Approved':0,'Pending approval':1,'Reshooting / editing':0,'Filming':3,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b4', name:'Mlay',         am:'KB', solution:'PREMIER',     status:'On track', active:36, credit:0,  total:36,  stages:{  'Posted on social':0,'Remixed':60,'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':9,'Creative direction Setup':0,'Creator onboarding':3,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b5', name:'SPQR',         am:'KB', solution:'PREMIER',     status:'On track', active:3,  credit:9,  total:12,  stages:{  'Posted on social':0,'Remixed':20,'Approved':1,'Pending approval':1,'Reshooting / editing':0,'Filming':1,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':3,'No brief (for this batch)':0}},
+      {id:'b6', name:'Fizz App',     am:'HG', solution:'PAYG',        status:'On track', active:0,  credit:12, total:25,  stages:{  'Posted on social':0,'Remixed':0, 'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':1,'No creator':0,'No brief (for this batch)':4}},
+      {id:'b7', name:'Dottopia',     am:'HG', solution:'PAYG',        status:'On track', active:13, credit:0,  total:25,  stages:{  'Posted on social':0,'Remixed':47,'Approved':0,'Pending approval':0,'Reshooting / editing':1,'Filming':1,'Scripting':1,'Shipment':11,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b8', name:'Aya App',      am:'AY', solution:'PAYG',        status:'On track', active:30, credit:0,  total:30,  stages:{  'Posted on social':0,'Remixed':140,'Approved':1,'Pending approval':0,'Reshooting / editing':0,'Filming':1,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b9', name:'Maharah',      am:'HG', solution:'PAYG',        status:'On track', active:15, credit:3,  total:18,  stages:{  'Posted on social':0,'Remixed':6, 'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':1,'Scripting':2,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':9}},
+      {id:'b10',name:'Kuwa',         am:'HG', solution:'PAYG',        status:'On track', active:4,  credit:26, total:30,  stages:{  'Posted on social':0,'Remixed':18,'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':4,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b11',name:'Valeo',        am:'HG', solution:'PAYG',        status:'On track', active:12, credit:18, total:30,  stages:{  'Posted on social':0,'Remixed':15,'Approved':0,'Pending approval':2,'Reshooting / editing':0,'Filming':0,'Scripting':1,'Shipment':1,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b12',name:'Bab Rizq',     am:'HG', solution:'PAYG',        status:'On track', active:11, credit:0,  total:11,  stages:{  'Posted on social':0,'Remixed':30,'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':1,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b13',name:'Olive Spa',    am:'HG', solution:'PAYG',        status:'On track', active:1,  credit:0,  total:1,   stages:{  'Posted on social':0,'Remixed':9, 'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':1,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b14',name:'Daleel',       am:'AY', solution:'PAYG',        status:'On track', active:0,  credit:0,  total:0,   stages:{  'Posted on social':0,'Remixed':260,'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b15',name:'OKX',          am:'HG', solution:'PAYG',        status:'On track', active:4,  credit:0,  total:4,   stages:{  'Posted on social':0,'Remixed':5, 'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':4}},
+      {id:'b16',name:'Talawin Art',  am:'HG', solution:'PAYG',        status:'On track', active:0,  credit:0,  total:0,   stages:{  'Posted on social':0,'Remixed':5, 'Approved':0,'Pending approval':0,'Reshooting / editing':0,'Filming':0,'Scripting':0,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+      {id:'b17',name:'ANAKA',        am:'HG', solution:'PAYG',        status:'On track', active:5,  credit:0,  total:5,   stages:{  'Posted on social':0,'Remixed':25,'Approved':0,'Pending approval':2,'Reshooting / editing':0,'Filming':0,'Scripting':2,'Shipment':0,'Creative direction Setup':0,'Creator onboarding':0,'No creator':0,'No brief (for this batch)':0}},
+    ],
+    tasks:[
+      {id:'t1',brand:'OKX',      am:'HG',desc:'Email brands — now operating in Egypt',  prio:'High',  due:'2026-04-16',status:'Pending',    notes:''},
+      {id:'t2',brand:'Maharah',  am:'HG',desc:'Follow up with brand on brief',          prio:'Normal',due:'2026-04-16',status:'Pending',    notes:''},
+      {id:'t3',brand:'ANAKA',    am:'HG',desc:'Follow up with Sheraz for edits',        prio:'Normal',due:'2026-04-15',status:'Done',       notes:'Will be back on the 20th'},
+      {id:'t4',brand:'Fizz App', am:'HG',desc:'Match 3 videos with creators',           prio:'High',  due:'2026-04-17',status:'In Progress',notes:'Awaiting Elina'},
+      {id:'t5',brand:'Dottopia', am:'HG',desc:"Check Rasha's video quality",            prio:'Normal',due:'2026-04-18',status:'Pending',    notes:'Awaiting reply'},
+      {id:'t6',brand:'Mlay',     am:'KB',desc:'Confirm shipment addresses',             prio:'High',  due:'2026-04-15',status:'Blocked',    notes:'Missing contact info'},
+      {id:'t7',brand:'Adrian',   am:'KB',desc:'Creative direction review call',         prio:'Normal',due:'2026-04-20',status:'Pending',    notes:''},
+      {id:'t8',brand:'Aya App',  am:'AY',desc:'Follow up with Samia on filming',        prio:'Normal',due:'2026-04-17',status:'Pending',    notes:'Awaiting reply'},
+    ]
+  };
+}
+
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let weeks         = [];   // all active + completed weeks
+let archivedWeeks = [];   // completed weeks only — source for rollups
+let activeWeekId  = '';
+let view          = 'daily';
+let dark          = false;
+let charts        = {};
+let editBrandId   = null;
+let editTaskId    = null;
+let renamingWkId  = null;
+let wkDropOpen    = false;
+let exportSel     = new Set();
+
+const SK = { weeks:'sv5_weeks', arch:'sv5_arch', awk:'sv5_awk', dark:'sv5_dark' };
+
+function persist() {
+  localStorage.setItem(SK.weeks, JSON.stringify(weeks));
+  localStorage.setItem(SK.arch,  JSON.stringify(archivedWeeks));
+  localStorage.setItem(SK.awk,   activeWeekId);
+}
+function hydrate() {
+  try { weeks         = JSON.parse(localStorage.getItem(SK.weeks) || 'null') || null; } catch(e) { weeks = null; }
+  try { archivedWeeks = JSON.parse(localStorage.getItem(SK.arch)  || '[]'); }          catch(e) { archivedWeeks = []; }
+  if (!weeks) { weeks = [makeSeed()]; }
+  activeWeekId = localStorage.getItem(SK.awk) || (weeks[0] ? weeks[0].id : '');
+  if (!weeks.find(w => w.id === activeWeekId)) activeWeekId = weeks[0] ? weeks[0].id : '';
+}
+
+// ════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════
+function clone(o)      { return JSON.parse(JSON.stringify(o)); }
+function uid()         { return 'x' + Date.now() + Math.random().toString(36).slice(2,5); }
+function today()       { return new Date().toISOString().slice(0,10); }
+function esc(s)        { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function getWeek()     { return weeks.find(w => w.id === activeWeekId) || weeks[0] || null; }
+function allTasks()    { return weeks.flatMap(w => w.tasks || []); }
+function rollupWeeks() { return archivedWeeks.slice().sort((a,b) => (a.weekNum||0)-(b.weekNum||0)); }
+function allWeeksAll() { return [...weeks,...archivedWeeks].sort((a,b) => (a.weekNum||0)-(b.weekNum||0)); }
+
+function labelExists(label, excludeId) {
+  const l = label.trim().toLowerCase();
+  return allWeeksAll().some(w => w.label.trim().toLowerCase() === l && w.id !== excludeId);
+}
+function nextAutoLabel() {
+  const maxN = allWeeksAll().reduce((mx,w) => Math.max(mx, w.weekNum||0), 0);
+  const d = new Date(); d.setDate(d.getDate() + 7);
+  return 'W'+(maxN+1)+' '+d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+}
+function sortedBrands(brands) {
+  return [...brands].sort((a,b) => {
+    const si = SOL_ORDER.indexOf(a.solution) - SOL_ORDER.indexOf(b.solution);
+    return si !== 0 ? si : AMS.indexOf(a.am) - AMS.indexOf(b.am);
+  });
+}
+function weekTotal(b)          { return STAGES.reduce((s,st) => s + (b.stages[st]||0), 0); }
+function stageTotal(wk, stage) { return wk.brands.reduce((s,b) => s + (b.stages[stage]||0), 0); }
+function grandTotal(wk)        { return wk.brands.reduce((s,b) => s + weekTotal(b), 0); }
+function stagePipeline(wk)     { return Object.fromEntries(STAGES.map(s => [s, stageTotal(wk,s)])); }
+function killCharts()          { Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} }); charts = {}; }
+function setTopbar(html)       { document.getElementById('topbar-r').innerHTML = html; }
+
+// Visual helpers
+function amColor(a)  { return {HG:'var(--purpledk)',KB:'var(--bluedk)',AY:'var(--greendk)'}[a] || 'var(--tx2)'; }
+function amBgCls(a)  { return {HG:'av-hg',KB:'av-kb',AY:'av-ay'}[a] || 'av-hg'; }
+function solCls(s)   { return {PREMIER:'sol-premier',INFLUENCERS:'sol-influencer',PAYG:'sol-payg'}[s] || 'sol-blank'; }
+function solBadge(s) { return '<span class="badge ' + ({PREMIER:'bp',PAYG:'bpg',INFLUENCERS:'bi'}[s]||'bpg') + '">' + s + '</span>'; }
+function stBadge(s)  { return '<span class="stb ' + (s==='On track'?'st-on':s==='Blocked'?'st-block':'st-risk') + '">' + s + '</span>'; }
+function consClr(c)  { return c>=100?'var(--green)':c<30?'var(--amber)':'var(--blue)'; }
+
+function metric(v, l, d) {
+  var dh = (d != null) ? '<div class="d ' + (d>=0?'dup':'ddn') + '">' + (d>=0?'+':'') + d + ' vs prev</div>' : '';
+  return '<div class="mc"><div class="v">' + v + '</div><div class="l">' + l + '</div>' + dh + '</div>';
+}
+function dueBadge(d) {
+  if (!d) return '';
+  var t = new Date(); t.setHours(0,0,0,0);
+  var dt = new Date(d+'T00:00:00'); dt.setHours(0,0,0,0);
+  var diff = Math.round((dt-t)/86400000);
+  if (diff < 0)   return '<span class="due-ov">Overdue ' + Math.abs(diff) + 'd</span>';
+  if (diff === 0) return '<span class="due-td">Due today</span>';
+  return '<span class="due-ok">In ' + diff + 'd</span>';
+}
+function pipBarsHTML(pip, grandT) {
+  var entries = Object.entries(pip).filter(function(e){return e[1]>0;}).sort(function(a,b){return b[1]-a[1];});
+  if (!entries.length) return '<div class="empty" style="padding:16px">No data</div>';
+  var maxV = entries[0][1];
+  return entries.map(function(e) {
+    var s = e[0], v = e[1];
+    return '<div class="pip"><span class="piplabel">' + (S_SHORT[s]||s) + '</span>' +
+      '<div class="pipbg"><div class="pipfill" style="width:' + Math.round(v/maxV*100) + '%;background:' + (S_COLOR[s]||'#888') + '"></div></div>' +
+      '<span class="pipn">' + v + '</span>' +
+      '<span class="pipp">' + (grandT ? Math.round(v/grandT*100) : 0) + '%</span></div>';
+  }).join('');
+}
+function axColor() { return dark ? '#94928a' : '#55544b'; }
+function gridColor(){ return dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.05)'; }
+
+// ════════════════════════════════════════════════════
+// DARK MODE
+// ════════════════════════════════════════════════════
+function toggleDark() {
+  dark = !dark;
+  document.getElementById('app').toggleAttribute('data-dark', dark);
+  document.getElementById('dtog').classList.toggle('on', dark);
+  localStorage.setItem(SK.dark, dark ? '1' : '0');
+  killCharts(); render();
+}
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+function nav(el) {
+  document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('on'); });
+  el.classList.add('on');
+  view = el.dataset.v;
+  document.getElementById('tb-title').textContent = VTITLES[view];
+  document.getElementById('tb-sub').textContent   = VSUBS[view];
+  killCharts(); render();
+}
+function goView(v) {
+  view = v;
+  document.querySelectorAll('.nb').forEach(function(b){ b.classList.toggle('on', b.dataset.v === v); });
+  document.getElementById('tb-title').textContent = VTITLES[v];
+  document.getElementById('tb-sub').textContent   = VSUBS[v];
+  killCharts(); render();
+}
+
+// ════════════════════════════════════════════════════
+// RENDER DISPATCHER
+// ════════════════════════════════════════════════════
+function render() {
+  var c = document.getElementById('mc');
+  var map = {daily:vDaily, taskboard:vTaskboard, weekly:vWeekly, monthly:vMonthly,
+             quarterly:vQuarterly, credits:vCredits, 'revops-report':vRevopsReport,
+             archive:vArchive, settings:vSettings, guide:vGuide};
+  (map[view] || vDaily)(c);
+}
+
+// ════════════════════════════════════════════════════
+// WEEK DROPDOWN
+// ════════════════════════════════════════════════════
+function weekDropdownHTML() {
+  var wk  = getWeek();
+  var cur = wk ? esc(wk.label) + (wk.completed ? ' ✓' : '') : 'No week';
+  var allW = allWeeksAll();
+  var items = allW.map(function(w) {
+    var doneTag = w.completed ? '<span class="wk-done-tag">Done</span>' : '';
+    var archBtn = w.completed
+      ? '<button class="wk-act-btn" title="Reopen" onclick="reopenWeekById(\'' + w.id + '\');event.stopPropagation()">↩</button>'
+      : '<button class="wk-act-btn" title="Archive" onclick="completeWeek(\'' + w.id + '\');event.stopPropagation()">📦</button>';
+    return '<div class="wk-dd-item ' + (w.id===activeWeekId?'on':'') + '">' +
+      '<span class="wk-item-name" onclick="switchWeek(\'' + w.id + '\')">' + esc(w.label) + '</span>' +
+      doneTag +
+      '<div class="wk-acts">' +
+        '<button class="wk-act-btn" title="Rename" onclick="openRenameWeek(\'' + w.id + '\');event.stopPropagation()">✏</button>' +
+        archBtn +
+        '<button class="wk-act-btn del" title="Delete" onclick="deleteWeek(\'' + w.id + '\');event.stopPropagation()">🗑</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  return '<div class="wk-dd-wrap" id="wk-dd-wrap">' +
+    '<button class="wk-dd-btn" id="wk-dd-btn" onclick="toggleWkDrop(event)">' +
+      '<span>' + cur + '</span><span class="arr">▼</span>' +
+    '</button>' +
+    '<div class="wk-dd-menu" id="wk-dd-menu">' +
+      items +
+      '<div class="wk-dd-item new-wk" onclick="openAddWeekModal();event.stopPropagation()">+ New week</div>' +
+    '</div>' +
+  '</div>';
+}
+function toggleWkDrop(e) {
+  e.stopPropagation();
+  wkDropOpen = !wkDropOpen;
+  var menu = document.getElementById('wk-dd-menu');
+  var btn  = document.getElementById('wk-dd-btn');
+  if (menu) menu.classList.toggle('open', wkDropOpen);
+  if (btn)  btn.classList.toggle('open', wkDropOpen);
+}
+function closeWkDrop() {
+  wkDropOpen = false;
+  var menu = document.getElementById('wk-dd-menu');
+  var btn  = document.getElementById('wk-dd-btn');
+  if (menu) menu.classList.remove('open');
+  if (btn)  btn.classList.remove('open');
+}
+function switchWeek(id) {
+  if (!weeks.find(function(w){return w.id===id;})) {
+    var aw = archivedWeeks.find(function(w){return w.id===id;});
+    if (aw) weeks.push(clone(aw));
+  }
+  activeWeekId = id;
+  closeWkDrop(); persist(); killCharts(); render();
+}
+
+// ════════════════════════════════════════════════════
+// ADD WEEK MODAL
+// ════════════════════════════════════════════════════
+function openAddWeekModal() {
+  closeWkDrop();
+  var maxN = allWeeksAll().reduce(function(mx,w){return Math.max(mx,w.weekNum||0);},0);
+  var presets = [];
+  for (var i=1;i<=3;i++) {
+    var d = new Date(); d.setDate(d.getDate()+i*7);
+    presets.push('W'+(maxN+i)+' '+d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}));
+  }
+  var inp = document.getElementById('wk-inp');
+  inp.value = presets[0];
+  inp.classList.remove('err');
+  document.getElementById('wk-err').style.display = 'none';
+  document.getElementById('wk-save-btn').disabled = false;
+  document.getElementById('wk-presets').innerHTML = presets.map(function(p){
+    return '<button class="chip" onclick="applyWkPreset(\'' + esc(p) + '\')">' + esc(p) + '</button>';
+  }).join('');
+  document.getElementById('addweek-ov').classList.add('open');
+  setTimeout(function(){ inp.focus(); }, 60);
+}
+function applyWkPreset(label) {
+  document.getElementById('wk-inp').value = label;
+  onWkLabelInput();
+}
+function onWkLabelInput() {
+  var val  = document.getElementById('wk-inp').value.trim();
+  var dup  = val && labelExists(val, null);
+  var empty= !val;
+  document.getElementById('wk-err').style.display = dup ? 'block' : 'none';
+  document.getElementById('wk-inp').classList.toggle('err', !!dup);
+  document.getElementById('wk-save-btn').disabled = !!(dup || empty);
+}
+function confirmAddWeek() {
+  var label = document.getElementById('wk-inp').value.trim();
+  if (!label) return;
+  if (labelExists(label, null)) { document.getElementById('wk-err').style.display='block'; return; }
+  var match   = label.match(/^W(\d+)/i);
+  var maxN    = allWeeksAll().reduce(function(mx,w){return Math.max(mx,w.weekNum||0);},0);
+  var weekNum = match ? parseInt(match[1]) : maxN+1;
+  var srcWk   = getWeek();
+  var newBrands = srcWk ? srcWk.brands.map(function(b){
+    var nb = clone(b); nb.id = uid();
+    STAGES.forEach(function(s){ nb.stages[s]=0; });
+    return nb;
+  }) : [];
+  var nw = {id:uid(), label:label, year:new Date().getFullYear(), weekNum:weekNum,
+            completed:false, completedAt:null, brands:newBrands, tasks:[]};
+  weeks.push(nw);
+  activeWeekId = nw.id;
+  persist(); closeOv('addweek-ov'); goView('daily');
+}
+
+// ════════════════════════════════════════════════════
+// RENAME WEEK MODAL
+// ════════════════════════════════════════════════════
+function openRenameWeek(id) {
+  closeWkDrop();
+  renamingWkId = id;
+  var w = allWeeksAll().find(function(x){return x.id===id;});
+  var inp = document.getElementById('rename-inp');
+  inp.value = w ? w.label : '';
+  inp.classList.remove('err');
+  document.getElementById('rename-err').style.display = 'none';
+  document.getElementById('rename-save').disabled = false;
+  document.getElementById('rename-ov').classList.add('open');
+  setTimeout(function(){ inp.focus(); inp.select(); }, 60);
+}
+function onRenameLabelInput() {
+  var val   = document.getElementById('rename-inp').value.trim();
+  var w     = allWeeksAll().find(function(x){return x.id===renamingWkId;});
+  var same  = w ? w.label : '';
+  var dup   = val && val.toLowerCase() !== same.toLowerCase() && labelExists(val, renamingWkId);
+  var empty = !val;
+  document.getElementById('rename-err').style.display = dup ? 'block' : 'none';
+  document.getElementById('rename-inp').classList.toggle('err', !!dup);
+  document.getElementById('rename-save').disabled = !!(dup || empty);
+}
+function confirmRename() {
+  var newLabel = document.getElementById('rename-inp').value.trim();
+  if (!newLabel) return;
+  var w = allWeeksAll().find(function(x){return x.id===renamingWkId;});
+  if (!w) return;
+  if (newLabel.toLowerCase() !== w.label.toLowerCase() && labelExists(newLabel, renamingWkId)) {
+    document.getElementById('rename-err').style.display = 'block'; return;
+  }
+  var wi = weeks.findIndex(function(x){return x.id===renamingWkId;});
+  if (wi >= 0) weeks[wi].label = newLabel;
+  var ai = archivedWeeks.findIndex(function(x){return x.id===renamingWkId;});
+  if (ai >= 0) archivedWeeks[ai].label = newLabel;
+  persist(); closeOv('rename-ov'); render();
+}
+
+// ════════════════════════════════════════════════════
+// DELETE WEEK
+// ════════════════════════════════════════════════════
+function deleteWeek(id) {
+  closeWkDrop();
+  var w = allWeeksAll().find(function(x){return x.id===id;});
+  if (!confirm('Delete "' + (w?w.label:'this week') + '" permanently?\nThis cannot be undone.')) return;
+  weeks         = weeks.filter(function(x){return x.id!==id;});
+  archivedWeeks = archivedWeeks.filter(function(x){return x.id!==id;});
+  if (activeWeekId === id) {
+    activeWeekId = (weeks[0] ? weeks[0].id : (archivedWeeks[0] ? archivedWeeks[0].id : ''));
+  }
+  persist(); killCharts(); render();
+}
+
+// ════════════════════════════════════════════════════
+// COMPLETE / REOPEN
+// ════════════════════════════════════════════════════
+function completeWeek(id) {
+  closeWkDrop();
+  // look in active weeks only
+  var wk = weeks.find(function(w){ return w.id === id; });
+  if (!wk) { alert('Week not found.'); return; }
+  if (wk.completed) { alert('This week is already completed.'); return; }
+
+  var completedAt = today();
+  var confirmed = confirm(
+    'Mark "' + wk.label + '" as complete?\n\n' +
+    'Completion date: ' + completedAt + '\n\n' +
+    'The week will become read-only and its data will be added to the Weekly, Monthly, and Quarterly rollups.'
+  );
+  if (!confirmed) return;
+
+  // stamp completion on the live object
+  wk.completed   = true;
+  wk.completedAt = completedAt;
+
+  // push a snapshot into archivedWeeks (the rollup source)
+  var snapshot = clone(wk);
+  var ei = archivedWeeks.findIndex(function(w){ return w.id === id; });
+  if (ei >= 0) archivedWeeks[ei] = snapshot;
+  else         archivedWeeks.unshift(snapshot);
+
+  persist();
+  killCharts();
+  render();
+}
+function reopenWeekById(id) {
+  closeWkDrop();
+  // find in weeks[] first; if only in archive, pull it back
+  var wk = weeks.find(function(w){ return w.id === id; });
+  if (!wk) {
+    var aw = archivedWeeks.find(function(w){ return w.id === id; });
+    if (!aw) { alert('Week not found.'); return; }
+    wk = clone(aw);
+    weeks.push(wk);
+  }
+  if (!confirm('Reopen "' + wk.label + '"?\nIt will be editable again and removed from rollup data until re-completed.')) return;
+  wk.completed   = false;
+  wk.completedAt = null;
+  archivedWeeks  = archivedWeeks.filter(function(w){ return w.id !== id; });
+  activeWeekId   = id;
+  persist(); killCharts(); render();
+}
+function reopenFromArchive(id) {
+  var idx = archivedWeeks.findIndex(function(w){return w.id===id;});
+  if (idx < 0) return;
+  var w = clone(archivedWeeks[idx]);
+  w.completed   = false;
+  w.completedAt = null;
+  archivedWeeks.splice(idx,1);
+  var wi = weeks.findIndex(function(x){return x.id===id;});
+  if (wi >= 0) weeks[wi] = w; else weeks.push(w);
+  activeWeekId = id;
+  persist(); goView('daily');
+}
+
+// ════════════════════════════════════════════════════
+// EXPORT PICKER MODAL
+// ════════════════════════════════════════════════════
+function openExportModal() {
+  exportSel = new Set([activeWeekId]);
+  renderExportList();
+  document.getElementById('export-ov').classList.add('open');
+}
+function renderExportList() {
+  var allW = allWeeksAll();
+  var html = allW.map(function(w) {
+    var gT     = grandTotal(w);
+    var chk    = exportSel.has(w.id) ? 'checked' : '';
+    var tagBg  = w.completed ? 'var(--greenbg)' : 'var(--amberbg)';
+    var tagClr = w.completed ? 'var(--greendk)' : 'var(--amberdk)';
+    var tagTxt = w.completed ? ('✓ ' + (w.completedAt||'Done')) : 'Active';
+    return '<label class="ex-row">' +
+      '<input type="checkbox" value="' + w.id + '" ' + chk +
+        ' onchange="exportToggle(\'' + w.id + '\',this.checked)"/>' +
+      '<div class="ex-info">' +
+        '<div class="ex-label">' + esc(w.label) + '</div>' +
+        '<div class="ex-meta">' + w.brands.length + ' brands · ' + gT + ' total videos</div>' +
+      '</div>' +
+      '<span class="ex-tag" style="background:' + tagBg + ';color:' + tagClr + '">' + tagTxt + '</span>' +
+    '</label>';
+  }).join('');
+  document.getElementById('export-list').innerHTML = html;
+  updateExportCount();
+}
+function exportToggle(id, checked) {
+  if (checked) exportSel.add(id); else exportSel.delete(id);
+  updateExportCount();
+}
+function exportSelectAll(val) {
+  allWeeksAll().forEach(function(w){ if(val) exportSel.add(w.id); else exportSel.delete(w.id); });
+  renderExportList();
+}
+function updateExportCount() {
+  var n = exportSel.size;
+  document.getElementById('export-count').textContent = n + ' week' + (n!==1?'s':'') + ' selected';
+  document.getElementById('export-dl-btn').disabled = n === 0;
+}
+function doExport() {
+  if (!exportSel.size) { alert('Select at least one week.'); return; }
+  var allW     = allWeeksAll();
+  var selected = allW.filter(function(w){ return exportSel.has(w.id); });
+  var parts    = selected.map(function(wk) {
+    var sb   = sortedBrands(wk.brands);
+    var gT   = grandTotal(wk) || 1;
+    var meta = [
+      '"Week","' + esc(wk.label) + '"',
+      '"Status","' + (wk.completed?'Completed':'Active') + '"',
+      '"Completed Date","' + (wk.completedAt||'') + '"',
+      '"Brands","' + sb.length + '"',
+      ''
+    ].join('\n');
+    var hdr  = ['Stage'].concat(sb.map(function(b){return b.name;})).concat(['Total','%']);
+    var rows = STAGES.map(function(s) {
+      var vals = sb.map(function(b){return b.stages[s]||0;});
+      var rowT = vals.reduce(function(a,v){return a+v;},0);
+      return [s].concat(vals).concat([rowT, ((rowT/gT)*100).toFixed(2)+'%']);
+    });
+    rows.push(['Weekly Total'].concat(sb.map(weekTotal)).concat([grandTotal(wk),'100%']));
+    var body = [hdr].concat(rows).map(function(r){
+      return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');
+    }).join('\n');
+    return meta + '\n' + body;
+  });
+  var csv   = parts.join('\n\n');
+  var fname = selected.length === 1
+    ? 'stllr-' + selected[0].label.replace(/\s+/g,'-') + '.csv'
+    : 'stllr-export-' + selected.length + 'weeks-' + today() + '.csv';
+  var a = document.createElement('a');
+  a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = fname;
+  a.click();
+  closeOv('export-ov');
+}
+
+// ════════════════════════════════════════════════════
+// BRAND CRUD
+// ════════════════════════════════════════════════════
+function openBrandModal(id) {
+  editBrandId = id || null;
+  var wk = getWeek();
+  var b  = id ? (wk ? wk.brands.find(function(x){return x.id===id;}) : null) : null;
+  document.getElementById('bm-title').textContent = b ? 'Edit brand' : 'Add brand';
+  document.getElementById('bm-save').textContent  = b ? 'Save changes' : 'Add brand';
+  document.getElementById('bm-name').value   = b ? b.name   : '';
+  document.getElementById('bm-am').value     = b ? b.am     : 'HG';
+  document.getElementById('bm-sol').value    = b ? b.solution : 'PAYG';
+  document.getElementById('bm-status').value = b ? b.status  : 'On track';
+  document.getElementById('bm-active').value = b ? b.active  : 0;
+  document.getElementById('bm-credit').value = b ? b.credit  : 0;
+  document.getElementById('bm-total').value  = b ? b.total   : 0;
+  document.getElementById('brand-ov').classList.add('open');
+}
+function saveBrand() {
+  var wk   = getWeek(); if (!wk) return;
+  var name = document.getElementById('bm-name').value.trim();
+  if (!name) { alert('Brand name required'); return; }
+  var data = {
+    name:name, am:document.getElementById('bm-am').value,
+    solution:document.getElementById('bm-sol').value,
+    status:document.getElementById('bm-status').value,
+    active:+(document.getElementById('bm-active').value)||0,
+    credit:+(document.getElementById('bm-credit').value)||0,
+    total:+(document.getElementById('bm-total').value)||0
+  };
+  if (editBrandId) {
+    var b = wk.brands.find(function(x){return x.id===editBrandId;});
+    if (b) Object.assign(b, data);
+  } else {
+    var nb = Object.assign({id:uid()}, data, {stages:{}});
+    STAGES.forEach(function(s){nb.stages[s]=0;});
+    wk.brands.push(nb);
+  }
+  persist(); closeOv('brand-ov'); killCharts(); render();
+}
+function deleteBrand(id) {
+  var wk = getWeek(); if (!wk) return;
+  if (!confirm('Remove this brand from the week?')) return;
+  wk.brands = wk.brands.filter(function(b){return b.id!==id;});
+  persist(); killCharts(); render();
+}
+function updateStage(brandId, stage, value) {
+  var wk = getWeek(); if (!wk) return;
+  var b  = wk.brands.find(function(x){return x.id===brandId;});
+  if (b) b.stages[stage] = Math.max(0, value);
+  persist();
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: DAILY OPS
+// ════════════════════════════════════════════════════
+function vDaily(c) {
+  var wk = getWeek();
+  if (!wk) {
+    setTopbar('<button class="btn btn-p" onclick="openAddWeekModal()">+ New week</button>');
+    c.innerHTML = '<div class="empty"><strong>No weeks yet</strong>Click "+ New week" to get started.</div>';
+    return;
+  }
+  var isCompleted = !!wk.completed;
+  var sb     = sortedBrands(wk.brands);
+  var pip    = stagePipeline(wk);
+  var grandT = grandTotal(wk);
+
+  // AM column groups
+  var amGroups = [];
+  sb.forEach(function(b) {
+    var last = amGroups[amGroups.length-1];
+    if (last && last.am === b.am) last.count++;
+    else amGroups.push({am:b.am, count:1});
+  });
+
+  setTopbar(
+    '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">' +
+      weekDropdownHTML() +
+      (isCompleted
+        ? '<span class="stb st-on" style="font-size:11px">✓ Completed ' + (wk.completedAt||'') + '</span>' +
+          '<button class="btn" onclick="reopenWeekById(\'' + wk.id + '\')">Reopen</button>'
+        : '<button class="btn btn-ok" onclick="completeWeek(\'' + wk.id + '\')">✓ Mark complete</button>'
+      ) +
+      '<button class="btn" onclick="openExportModal()">Export CSV</button>' +
+    '</div>'
+  );
+
+  // Build table HTML
+  var amHeaderCells = amGroups.map(function(g) {
+    var bg = g.am==='KB'?'#0e2a50':g.am==='HG'?'#2a1a50':'#0e3820';
+    return '<td colspan="' + g.count + '" style="background:' + bg + '">' + g.am + ' — ' + AM_FULL[g.am] + '</td>';
+  }).join('');
+
+  var solCells    = sb.map(function(b){ return '<td class="' + solCls(b.solution) + '">' + b.solution + '</td>'; }).join('');
+  var statusCells = sb.map(function(b){ return '<td>' + stBadge(b.status) + '</td>'; }).join('');
+
+  var brandCells = sb.map(function(b) {
+    var btns = !isCompleted
+      ? '<div style="display:flex;gap:3px">' +
+          '<button class="btn btn-sm" style="padding:1px 6px;font-size:9px" onclick="openBrandModal(\'' + b.id + '\')">✏</button>' +
+          '<button class="btn btn-sm" style="padding:1px 6px;font-size:9px;color:var(--reddk)" onclick="deleteBrand(\'' + b.id + '\')">✕</button>' +
+        '</div>'
+      : '';
+    return '<td><div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
+      '<span style="font-weight:700;font-size:11px">' + esc(b.name) + '</span>' + btns +
+      '</div></td>';
+  }).join('');
+
+  var stageRows = STAGES.map(function(s) {
+    var rowT = stageTotal(wk, s);
+    var pct  = grandT > 0 ? ((rowT/grandT)*100).toFixed(2)+'%' : '0%';
+    var cells = sb.map(function(b) {
+      var v = b.stages[s]||0;
+      if (isCompleted) {
+        return '<td><span class="' + (v>0?'cv-pos':'cv-0') + '">' + (v||'—') + '</span></td>';
+      }
+      return '<td><input class="sheet-inp" type="number" min="0" value="' + v + '"' +
+        ' onfocus="this.select()"' +
+        ' onchange="updateStage(\'' + b.id + '\',\'' + s + '\',+this.value)"' +
+        ' style="color:' + (v>0?'var(--bluedk)':'var(--tx3)') + '"/></td>';
+    }).join('');
+    return '<tr class="stage-row">' +
+      '<td class="lbl" style="border-left:3px solid ' + (S_COLOR[s]||'#888') + '">' + s + '</td>' +
+      cells +
+      '<td class="grand">' + (rowT||'—') + '</td>' +
+      '<td class="grand" style="color:var(--tx3);font-size:10px">' + pct + '</td>' +
+    '</tr>';
+  }).join('');
+
+  var totalCells = sb.map(function(b){ return '<td class="total">' + (weekTotal(b)||'—') + '</td>'; }).join('');
+  var pctCells   = sb.map(function(b){
+    var p = grandT > 0 ? ((weekTotal(b)/grandT)*100).toFixed(1) : '0';
+    return '<td>' + p + '%</td>';
+  }).join('');
+
+  var addBrandBtn = !isCompleted
+    ? '<button class="btn btn-p" style="font-size:11px" onclick="openBrandModal()">+ Add brand</button>'
+    : '';
+
+  var completedBanner = isCompleted
+    ? '<div class="alert a-ok" style="margin-bottom:10px">✓ <strong>' + esc(wk.label) +
+      '</strong> was marked complete on <strong>' + (wk.completedAt||'unknown') +
+      '</strong>. Data is read-only and included in all rollup tabs. Click <strong>Reopen</strong> to edit.</div>'
+    : '';
+
+  c.innerHTML =
+    '<div class="metrics">' +
+      metric(sb.length, 'Brands') +
+      metric(grandT, 'Total stage videos') +
+      metric(pip['Remixed']||0, 'Remixed') +
+      metric((pip['Filming']||0)+(pip['Scripting']||0), 'In production') +
+    '</div>' +
+    completedBanner +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<div class="sec" style="margin:0">Production stage matrix — ' + esc(wk.label) + '</div>' +
+      addBrandBtn +
+    '</div>' +
+    '<div class="sheet-outer"><table class="sheet-tbl">' +
+      '<thead>' +
+        '<tr class="h-am"><td style="text-align:left;background:#111d30;min-width:210px">Stage</td>' + amHeaderCells + '<td style="background:#111d30;min-width:58px">Total</td><td style="background:#111d30;min-width:54px">%</td></tr>' +
+        '<tr class="h-sol"><td class="sol-blank lbl" style="text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tx3)">Solution</td>' + solCells + '<td class="sol-blank grand"></td><td class="sol-blank grand"></td></tr>' +
+        '<tr class="h-status"><td style="text-align:left;font-size:9px;color:var(--tx3)">Status</td>' + statusCells + '<td class="grand"></td><td class="grand"></td></tr>' +
+        '<tr class="h-brand"><td class="lbl">Brand ↓ / Stage →</td>' + brandCells + '<td class="grand" style="font-weight:700">Total</td><td class="grand" style="font-weight:700">%</td></tr>' +
+      '</thead>' +
+      '<tbody>' +
+        stageRows +
+        '<tr class="total-row"><td class="lbl">Weekly Total</td>' + totalCells + '<td class="grand">' + grandT + '</td><td class="grand" style="color:var(--tx3);font-size:10px">100%</td></tr>' +
+        '<tr class="pct-row"><td class="lbl">% of total</td>' + pctCells + '<td class="grand">100%</td><td class="grand"></td></tr>' +
+      '</tbody>' +
+    '</table></div>' +
+    '<div class="two" style="margin-top:12px">' +
+      '<div class="card"><div class="ct">Stage distribution (video counts)</div>' + pipBarsHTML(pip, grandT) + '</div>' +
+      '<div class="card"><div class="ct">Stage breakdown chart</div><div class="ch"><canvas id="daily-chart"></canvas></div></div>' +
+    '</div>';
+
+  setTimeout(function() {
+    var entries = Object.entries(pip).filter(function(e){return e[1]>0;});
+    var ctx = document.getElementById('daily-chart');
+    if (!ctx || !entries.length) return;
+    charts['daily'] = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: entries.map(function(e){return S_SHORT[e[0]]||e[0];}),
+        datasets:[{data:entries.map(function(e){return e[1];}), backgroundColor:entries.map(function(e){return S_COLOR[e[0]]||'#888';}), borderRadius:4}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{color:axColor(),font:{size:9},maxRotation:35}},
+                y:{grid:{color:gridColor()},ticks:{color:axColor(),font:{size:10}}}}}
+    });
+  }, 80);
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: TASK BOARD
+// ════════════════════════════════════════════════════
+var tbAm = '', tbSearch = '';
+var TASK_COLS = ['Pending','In Progress','Blocked','Done'];
+
+function vTaskboard(c) {
+  setTopbar('<button class="btn btn-p" style="font-size:11px" onclick="openTaskModal()">+ New task</button>');
+  var tasks   = allTasks();
+  var now     = new Date(); now.setHours(0,0,0,0);
+  var overdue = tasks.filter(function(t){
+    if (!t.due || t.status==='Done') return false;
+    var d = new Date(t.due+'T00:00:00'); d.setHours(0,0,0,0); return d < now;
+  }).length;
+  var ft = tasks;
+  if (tbAm)     ft = ft.filter(function(t){return t.am===tbAm;});
+  if (tbSearch) ft = ft.filter(function(t){return (t.brand+t.desc+(t.notes||'')).toLowerCase().includes(tbSearch.toLowerCase());});
+
+  function kcard(t) {
+    return '<div class="kcard" onclick="openTaskModal(\'' + t.id + '\')">' +
+      (t.brand ? '<span class="kbrand">' + esc(t.brand) + '</span>' : '') +
+      '<div class="kdesc">' + esc(t.desc) + '</div>' +
+      (t.notes ? '<div style="font-size:10px;color:var(--tx3);font-style:italic;margin-bottom:3px">' + esc(t.notes) + '</div>' : '') +
+      '<div class="kfoot">' +
+        '<div style="display:flex;align-items:center;gap:3px"><span class="av ' + amBgCls(t.am) + '">' + t.am + '</span><span style="font-size:10px;color:var(--tx2)">' + t.am + '</span></div>' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">' +
+          '<span class="' + (t.prio==='High'?'prio-h':'prio-n') + '">' + t.prio + '</span>' +
+          dueBadge(t.due) +
+        '</div>' +
+      '</div></div>';
+  }
+
+  c.innerHTML =
+    '<div class="metrics">' +
+      metric(tasks.length,'Total tasks') + metric(tasks.filter(function(t){return t.status==='Pending';}).length,'Pending') +
+      metric(overdue,'Overdue') + metric(tasks.filter(function(t){return t.status==='Done';}).length,'Done') +
+    '</div>' +
+    '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center">' +
+      '<input class="inp" placeholder="🔍 Search…" style="width:160px" value="' + esc(tbSearch) + '" oninput="tbSearch=this.value;render()"/>' +
+      '<select class="inp" style="width:90px" onchange="tbAm=this.value;render()">' +
+        '<option value="">All AMs</option>' + AMS.map(function(a){return '<option'+(a===tbAm?' selected':'')+'>'+a+'</option>';}).join('') +
+      '</select>' +
+    '</div>' +
+    '<div class="kanban">' +
+      TASK_COLS.map(function(col) {
+        var ct = ft.filter(function(t){return t.status===col;});
+        return '<div class="kcol"><div class="khead">' + col + '<span class="kct">' + ct.length + '</span></div>' +
+          (ct.length ? ct.map(kcard).join('') : '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:16px 0">No tasks</div>') +
+          '<button onclick="openTaskModal()" style="width:100%;margin-top:5px;padding:4px;font-size:10px;color:var(--tx3);background:none;border:.5px dashed var(--bds);border-radius:var(--r);cursor:pointer">+ add</button>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: WEEKLY ROLLUP
+// ════════════════════════════════════════════════════
+function vWeekly(c) {
+  setTopbar('');
+  var allW = rollupWeeks();
+  if (!allW.length) {
+    c.innerHTML = '<div class="empty"><strong>No completed weeks yet</strong>Complete a week in Daily Ops — its data will appear here.</div>';
+    return;
+  }
+  var curW  = allW[allW.length-1];
+  var prevW = allW[allW.length-2];
+  var grandT = grandTotal(curW);
+  var deltaT = prevW ? grandTotal(curW)-grandTotal(prevW) : null;
+
+  var weekTableHTML = allW.map(function(w) {
+    var sb = sortedBrands(w.brands);
+    var gT = grandTotal(w);
+    var amGr = [];
+    sb.forEach(function(b){ var last=amGr[amGr.length-1]; if(last&&last.am===b.am)last.count++; else amGr.push({am:b.am,count:1}); });
+    var amHdr = amGr.map(function(g){
+      var bg = g.am==='KB'?'#0e2a50':g.am==='HG'?'#2a1a50':'#0e3820';
+      return '<td colspan="'+g.count+'" style="font-size:9px;background:'+bg+'">'+g.am+'</td>';
+    }).join('');
+    var brandHdr = sb.map(function(b){return '<td style="font-size:10px">'+esc(b.name)+'</td>';}).join('');
+    var stRows = STAGES.map(function(s) {
+      var rowT = stageTotal(w,s);
+      if (!rowT) return '';
+      var cells = sb.map(function(b){var v=b.stages[s]||0;return '<td><span class="'+(v>0?'cv-pos':'cv-0')+'">'+(v||'—')+'</span></td>';}).join('');
+      return '<tr class="stage-row"><td class="lbl" style="font-size:10px;min-width:150px;border-left:3px solid '+(S_COLOR[s]||'#888')+'">'+(S_SHORT[s]||s)+'</td>'+cells+'<td class="grand" style="font-size:10px">'+(rowT||'—')+'</td></tr>';
+    }).filter(Boolean).join('');
+    var totCells = sb.map(function(b){return '<td class="total" style="font-size:10px">'+(weekTotal(b)||'—')+'</td>';}).join('');
+    return '<div class="card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+        '<div class="ct" style="margin:0">'+esc(w.label)+' <span class="stb st-on" style="font-size:9px">Completed '+esc(w.completedAt||'')+'</span></div>' +
+        '<span style="font-size:10px;color:var(--tx3)">'+sb.length+' brands · '+gT+' total</span>' +
+      '</div>' +
+      '<div style="overflow-x:auto"><table class="sheet-tbl" style="font-size:10px">' +
+        '<thead>' +
+          '<tr class="h-am"><td style="text-align:left;background:#111d30;min-width:150px;font-size:9px">Stage</td>'+amHdr+'<td style="background:#111d30;font-size:9px">Total</td></tr>' +
+          '<tr class="h-brand"><td class="lbl" style="font-size:9px;min-width:150px">Brand</td>'+brandHdr+'<td class="grand"></td></tr>' +
+        '</thead>' +
+        '<tbody>'+stRows+'<tr class="total-row"><td class="lbl" style="font-size:9px">Weekly Total</td>'+totCells+'<td class="grand">'+gT+'</td></tr></tbody>' +
+      '</table></div>' +
+    '</div>';
+  }).join('');
+
+  c.innerHTML =
+    '<div class="metrics">' +
+      metric(allW.length,'Weeks completed') + metric(grandT,'Latest week total',deltaT) +
+      metric(curW.brands.length,'Active brands') + metric(new Set(allW.flatMap(function(w){return w.brands.map(function(b){return b.name;});})).size,'Unique brands') +
+    '</div>' +
+    '<div class="two">' +
+      '<div class="card"><div class="ct">Total videos per completed week</div><div class="ch"><canvas id="wk-chart"></canvas></div></div>' +
+      '<div class="card"><div class="ct">Latest: ' + esc(curW.label) + ' — Stage pipeline</div>' + pipBarsHTML(stagePipeline(curW), grandT) + '</div>' +
+    '</div>' +
+    weekTableHTML;
+
+  setTimeout(function() {
+    var ctx = document.getElementById('wk-chart'); if(!ctx) return;
+    charts['wk'] = new Chart(ctx, {
+      type:'bar',
+      data:{labels:allW.map(function(w){return w.label;}), datasets:[{data:allW.map(grandTotal), backgroundColor:'#2575c8', borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{color:axColor(),font:{size:10}}},y:{grid:{color:gridColor()},ticks:{color:axColor(),font:{size:10}}}}}
+    });
+  }, 80);
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: MONTHLY ROLLUP
+// ════════════════════════════════════════════════════
+var mfSol = '';
+function vMonthly(c) {
+  setTopbar('');
+  var allW = rollupWeeks();
+  var byMonth = {};
+  for (var m=1;m<=12;m++) byMonth[m] = {brands:new Set(), stageMap:{}, total:0};
+  STAGES.forEach(function(s){ for(var m=1;m<=12;m++) byMonth[m].stageMap[s]=0; });
+  allW.forEach(function(w) {
+    var mo = Math.min(Math.max(Math.ceil((w.weekNum||1)/4.33),1),12);
+    var bd = mfSol ? w.brands.filter(function(b){return b.solution===mfSol;}) : w.brands;
+    bd.forEach(function(b) {
+      byMonth[mo].brands.add(b.name);
+      STAGES.forEach(function(s){ byMonth[mo].stageMap[s] += b.stages[s]||0; });
+      byMonth[mo].total += weekTotal(b);
+    });
+  });
+  var mTotals = Object.values(byMonth).map(function(m){return m.total;});
+  var maxM    = Math.max.apply(null, mTotals.concat([1]));
+  var overallStage = {};
+  STAGES.forEach(function(s){ overallStage[s]=Object.values(byMonth).reduce(function(sum,m){return sum+(m.stageMap[s]||0);},0); });
+  var overallT = Object.values(overallStage).reduce(function(s,v){return s+v;},0);
+
+  var solOpts = ['PAYG','PREMIER','INFLUENCERS'].map(function(s){return '<option'+(mfSol===s?' selected':'')+'>'+s+'</option>';}).join('');
+  var monthRows = MONTHS.map(function(mn, i) {
+    var md = byMonth[i+1]; if(!md.total) return '';
+    var topStage = Object.entries(md.stageMap).sort(function(a,b){return b[1]-a[1];})[0];
+    var topHtml  = topStage ? '<span style="font-size:10px;color:'+S_COLOR[topStage[0]]+';font-weight:600">'+(S_SHORT[topStage[0]]||topStage[0])+' ('+topStage[1]+')</span>' : '-';
+    var pct = Math.round(md.total/maxM*100);
+    return '<tr style="border-bottom:.5px solid var(--bd)">' +
+      '<td style="padding:6px 10px;font-weight:600">'+mn+'</td>' +
+      '<td style="padding:6px 10px">'+md.brands.size+'</td>' +
+      '<td style="padding:6px 10px;font-weight:700">'+md.total+'</td>' +
+      '<td style="padding:6px 10px">'+topHtml+'</td>' +
+      '<td style="padding:6px 10px;width:170px"><div style="display:flex;align-items:center;gap:5px">' +
+        '<div class="prog-o" style="width:100px"><div class="prog-i" style="width:'+pct+'%;background:var(--blue)"></div></div>' +
+        '<span style="font-size:10px;color:var(--tx3)">'+pct+'%</span></div></td>' +
+    '</tr>';
+  }).filter(Boolean).join('');
+
+  c.innerHTML =
+    '<div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">' +
+      '<select class="inp" style="width:130px" onchange="mfSol=this.value;render()"><option value="">All solutions</option>'+solOpts+'</select>' +
+      '<span style="font-size:10px;color:var(--tx3)">'+allW.length+' completed week(s)</span>' +
+    '</div>' +
+    '<div class="metrics">' +
+      metric(allW.length,'Weeks') + metric(new Set(allW.flatMap(function(w){return w.brands.map(function(b){return b.name;});})).size,'Brands') +
+      metric(mTotals.reduce(function(s,v){return s+v;},0),'Total videos') + metric(overallStage['Remixed']||0,'Remixed') +
+    '</div>' +
+    '<div class="two">' +
+      '<div class="card"><div class="ct">Monthly output</div><div class="ch"><canvas id="mo-chart"></canvas></div></div>' +
+      '<div class="card"><div class="ct">Stage breakdown (all completed weeks)</div>'+pipBarsHTML(overallStage,overallT)+'</div>' +
+    '</div>' +
+    '<div class="card"><div class="ct">Month-by-month breakdown</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:11px">' +
+        '<thead><tr style="border-bottom:.5px solid var(--bds)">' +
+          ['Month','Brands','Total','Top stage','Progress'].map(function(h){return '<th style="text-align:left;padding:6px 10px;color:var(--tx3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">'+h+'</th>';}).join('') +
+        '</tr></thead>' +
+        '<tbody>'+monthRows+'</tbody>' +
+      '</table>' +
+    '</div>';
+
+  setTimeout(function() {
+    var ctx = document.getElementById('mo-chart'); if(!ctx) return;
+    charts['mo'] = new Chart(ctx, {
+      type:'bar',
+      data:{labels:MONTHS, datasets:[{data:mTotals, backgroundColor:mTotals.map(function(v){return v>0?'#2575c8':'rgba(128,128,128,.12)';}), borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{color:axColor(),font:{size:10}}},y:{grid:{color:gridColor()},ticks:{color:axColor(),font:{size:10}}}}}
+    });
+  }, 80);
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: QUARTERLY ROLLUP
+// ════════════════════════════════════════════════════
+var qfSol = '', qfAM = '';
+function vQuarterly(c) {
+  setTopbar('');
+  var allW = rollupWeeks();
+  var allBrands = allW.flatMap(function(w) {
+    var b = w.brands;
+    if (qfSol) b = b.filter(function(x){return x.solution===qfSol;});
+    if (qfAM)  b = b.filter(function(x){return x.am===qfAM;});
+    return b;
+  });
+  var totalVideos = allBrands.reduce(function(s,b){return s+weekTotal(b);},0);
+  var stgAll = {};
+  STAGES.forEach(function(s){ stgAll[s]=allBrands.reduce(function(sum,b){return sum+(b.stages[s]||0);},0); });
+  var overallT = Object.values(stgAll).reduce(function(s,v){return s+v;},0);
+  var solSplit = {PAYG:0,PREMIER:0,INFLUENCERS:0};
+  allW.flatMap(function(w){return w.brands;}).forEach(function(b){ if(b.solution in solSplit) solSplit[b.solution]+=weekTotal(b); });
+  var amSplit = {};
+  AMS.forEach(function(a){ amSplit[a]=allW.flatMap(function(w){return w.brands;}).filter(function(b){return b.am===a;}).reduce(function(s,b){return s+weekTotal(b);},0); });
+  var wkData = allW.map(function(w) {
+    var b = w.brands;
+    if (qfSol) b = b.filter(function(x){return x.solution===qfSol;});
+    if (qfAM)  b = b.filter(function(x){return x.am===qfAM;});
+    return {label:w.label, total:b.reduce(function(s,br){return s+weekTotal(br);},0)};
+  });
+
+  var solOpts = ['PAYG','PREMIER','INFLUENCERS'].map(function(s){return '<option'+(qfSol===s?' selected':'')+'>'+s+'</option>';}).join('');
+  var amOpts  = AMS.map(function(a){return '<option'+(qfAM===a?' selected':'')+'>'+a+'</option>';}).join('');
+
+  c.innerHTML =
+    '<div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">' +
+      '<select class="inp" style="width:130px" onchange="qfSol=this.value;killCharts();vQuarterly(document.getElementById(\'mc\'))"><option value="">All solutions</option>'+solOpts+'</select>' +
+      '<select class="inp" style="width:120px" onchange="qfAM=this.value;killCharts();vQuarterly(document.getElementById(\'mc\'))"><option value="">All AMs</option>'+amOpts+'</select>' +
+    '</div>' +
+    '<div class="metrics">' +
+      metric(allW.length,'Weeks') + metric(new Set(allBrands.map(function(b){return b.name;})).size,'Brands') +
+      metric(totalVideos,'Total videos') + metric(stgAll['Remixed']||0,'Remixed') +
+    '</div>' +
+    '<div class="two">' +
+      '<div class="card"><div class="ct">Stage pipeline</div>'+pipBarsHTML(stgAll,overallT)+'</div>' +
+      '<div class="card"><div class="ct">Weekly video trend</div><div class="ch"><canvas id="q-trend"></canvas></div></div>' +
+    '</div>' +
+    '<div class="two">' +
+      '<div class="card"><div class="ct">Solution split</div><div class="ch"><canvas id="q-sol"></canvas></div></div>' +
+      '<div class="card"><div class="ct">AM contribution</div><div class="ch"><canvas id="q-am"></canvas></div></div>' +
+    '</div>';
+
+  setTimeout(function() {
+    var ac=axColor(), gc=gridColor();
+    var tCtx=document.getElementById('q-trend');
+    if(tCtx&&wkData.length) charts['qt']=new Chart(tCtx,{type:'line',data:{labels:wkData.map(function(w){return w.label;}),datasets:[{data:wkData.map(function(w){return w.total;}),borderColor:'#2575c8',backgroundColor:'rgba(37,117,200,.1)',tension:.35,fill:true,pointRadius:4,pointBackgroundColor:'#2575c8'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:ac,font:{size:10}}},y:{grid:{color:gc},ticks:{color:ac,font:{size:10}}}}}});
+    var sCtx=document.getElementById('q-sol');
+    if(sCtx) charts['qs']=new Chart(sCtx,{type:'doughnut',data:{labels:['PAYG','PREMIER','INFLUENCERS'],datasets:[{data:[solSplit.PAYG,solSplit.PREMIER,solSplit.INFLUENCERS],backgroundColor:['#147a5e','#6058c4','#ae6c10'],borderWidth:1,borderColor:'transparent'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:ac,font:{size:10},boxWidth:10,padding:7}}}}});
+    var aCtx=document.getElementById('q-am');
+    if(aCtx) charts['qa']=new Chart(aCtx,{type:'bar',data:{labels:AMS.map(function(a){return AM_FULL[a];}),datasets:[{data:AMS.map(function(a){return amSplit[a]||0;}),backgroundColor:['#6058c4','#2575c8','#4f8f13'],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{color:ac,font:{size:10}}},y:{grid:{display:false},ticks:{color:ac,font:{size:11}}}}}});
+  }, 80);
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: BRAND VIDEO CREDIT
+// ════════════════════════════════════════════════════
+var cfAM='', cfSol='';
+function vCredits(c) {
+  setTopbar('');
+  var wk = getWeek();
+  var brands = wk ? wk.brands.slice() : [];
+  if (cfAM)  brands = brands.filter(function(b){return b.am===cfAM;});
+  if (cfSol) brands = brands.filter(function(b){return b.solution===cfSol;});
+  brands.sort(function(a,b){return b.active-a.active;});
+  var totA=brands.reduce(function(s,b){return s+b.active;},0);
+  var totC=brands.reduce(function(s,b){return s+b.credit;},0);
+  var totT=brands.reduce(function(s,b){return s+b.total;},0);
+
+  var amOpts  = AMS.map(function(a){return '<option'+(cfAM===a?' selected':'')+'>'+a+'</option>';}).join('');
+  var solOpts = ['PAYG','PREMIER','INFLUENCERS'].map(function(s){return '<option'+(cfSol===s?' selected':'')+'>'+s+'</option>';}).join('');
+  var rows = brands.map(function(b){
+    var cons=b.total?Math.round(b.active/b.total*100):0, cc=consClr(cons);
+    return '<tr style="border-bottom:.5px solid var(--bd)">' +
+      '<td style="padding:6px 10px;font-weight:700">'+esc(b.name)+'</td>' +
+      '<td style="padding:6px 10px;color:'+amColor(b.am)+';font-weight:700">'+b.am+'</td>' +
+      '<td style="padding:6px 10px">'+solBadge(b.solution)+'</td>' +
+      '<td style="padding:6px 10px;font-weight:700;color:var(--bluedk)">'+b.active+'</td>' +
+      '<td style="padding:6px 10px;color:var(--tx2)">'+b.credit+'</td>' +
+      '<td style="padding:6px 10px">'+b.total+'</td>' +
+      '<td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:5px">' +
+        '<div class="prog-o" style="width:55px"><div class="prog-i" style="width:'+Math.min(cons,100)+'%;background:'+cc+'"></div></div>' +
+        '<span style="font-size:11px;font-weight:700;color:'+cc+'">'+cons+'%</span></div></td>' +
+    '</tr>';
+  }).join('');
+
+  c.innerHTML =
+    '<div class="alert a-info" style="margin-bottom:12px">Showing credit data for <strong>'+(wk?esc(wk.label):'—')+'</strong>. Edit via the brand ✏ button in Daily Ops.</div>' +
+    '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' +
+      '<select class="inp" style="width:110px" onchange="cfAM=this.value;render()"><option value="">All AMs</option>'+amOpts+'</select>' +
+      '<select class="inp" style="width:130px" onchange="cfSol=this.value;render()"><option value="">All solutions</option>'+solOpts+'</select>' +
+    '</div>' +
+    '<div class="metrics">'+metric(brands.length,'Brands')+metric(totA,'Total active')+metric(totC,'Total credit')+metric(totT,'Total quoted')+'</div>' +
+    '<div class="two">' +
+      '<div class="card"><div class="ct">Active vs Credit vs Total (top brands)</div><div class="ch"><canvas id="cr-chart"></canvas></div></div>' +
+      '<div class="card"><div class="ct">Consumption rate</div><div class="ch"><canvas id="cons-chart"></canvas></div></div>' +
+    '</div>' +
+    '<div class="card"><div class="ct">Brand video credit table</div><div style="overflow-x:auto">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:11px">' +
+        '<thead><tr style="border-bottom:.5px solid var(--bds)">' +
+          ['Brand','AM','Solution','Active','Credit','Total','Consumption'].map(function(h){return '<th style="text-align:left;padding:6px 10px;color:var(--tx3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">'+h+'</th>';}).join('')+
+        '</tr></thead><tbody>'+rows+
+        '<tr style="border-top:.5px solid var(--bds);background:var(--sf2)">' +
+          '<td colspan="3" style="padding:6px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)">Totals</td>' +
+          '<td style="padding:6px 10px;font-weight:700">'+totA+'</td><td style="padding:6px 10px;font-weight:700">'+totC+'</td><td style="padding:6px 10px;font-weight:700">'+totT+'</td><td></td>' +
+        '</tr></tbody></table></div></div>';
+
+  setTimeout(function() {
+    var ac=axColor(), gc=gridColor();
+    var top=brands.slice(0,10);
+    var crCtx=document.getElementById('cr-chart');
+    if(crCtx&&top.length) charts['cr']=new Chart(crCtx,{type:'bar',data:{labels:top.map(function(b){return b.name;}),datasets:[{label:'Active',data:top.map(function(b){return b.active;}),backgroundColor:'#2575c8',borderRadius:3},{label:'Credit',data:top.map(function(b){return b.credit;}),backgroundColor:'rgba(37,117,200,.3)',borderRadius:3},{label:'Total',data:top.map(function(b){return b.total;}),backgroundColor:'rgba(37,117,200,.1)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:9},color:ac,boxWidth:9}}},scales:{x:{grid:{display:false},ticks:{color:ac,font:{size:9},maxRotation:30}},y:{grid:{color:gc},ticks:{color:ac,font:{size:10}}}}}});
+    var cCtx=document.getElementById('cons-chart');
+    if(cCtx&&brands.length) charts['cons']=new Chart(cCtx,{type:'bar',data:{labels:brands.map(function(b){return b.name;}),datasets:[{data:brands.map(function(b){return b.total?Math.round(b.active/b.total*100):0;}),backgroundColor:brands.map(function(b){var c=b.total?Math.round(b.active/b.total*100):0;return c>=100?'#4f8f13':c<30?'#ae6c10':'#2575c8';}),borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:ac,font:{size:9},maxRotation:30}},y:{max:100,grid:{color:gc},ticks:{color:ac,font:{size:10},callback:function(v){return v+'%';}}}}}}); 
+  }, 80);
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: REVOPS REPORT  — General performance report
+// ════════════════════════════════════════════════════
+function vRevopsReport(c) {
+  setTopbar('<button class="btn" onclick="exportRevopsReport()">Export report CSV</button>');
+
+  // Combine active + completed weeks for full picture
+  var allW      = allWeeksAll();
+  var completed = rollupWeeks();
+  var active    = weeks.filter(function(w){ return !w.completed; });
+
+  if (!allW.length) {
+    c.innerHTML = '<div class="empty"><strong>No data yet</strong>Add brands and stages in Daily Ops to generate a report.</div>';
+    return;
+  }
+
+  // ── Master aggregations ─────────────────────────
+  // 1. Stage totals across ALL weeks
+  var stageTotals = {};
+  STAGES.forEach(function(s){ stageTotals[s] = 0; });
+  allW.forEach(function(w){
+    w.brands.forEach(function(b){
+      STAGES.forEach(function(s){ stageTotals[s] += b.stages[s] || 0; });
+    });
+  });
+  var grandAllT    = Object.values(stageTotals).reduce(function(a,v){ return a+v; }, 0);
+  var sortedStages = Object.entries(stageTotals).sort(function(a,b){ return b[1]-a[1]; });
+
+  // 2. Stage totals: completed vs active weeks
+  var stageByStatus = { completed:{}, active:{} };
+  STAGES.forEach(function(s){ stageByStatus.completed[s]=0; stageByStatus.active[s]=0; });
+  completed.forEach(function(w){ w.brands.forEach(function(b){ STAGES.forEach(function(s){ stageByStatus.completed[s]+=b.stages[s]||0; }); }); });
+  active.forEach(function(w){    w.brands.forEach(function(b){ STAGES.forEach(function(s){ stageByStatus.active[s]   +=b.stages[s]||0; }); }); });
+
+  // 3. Per-AM performance
+  var amPerf = {};
+  AMS.forEach(function(a){ amPerf[a]={ stages:{}, totalVideos:0, brands:new Set(), weeks:new Set() }; STAGES.forEach(function(s){ amPerf[a].stages[s]=0; }); });
+  allW.forEach(function(w){
+    w.brands.forEach(function(b){
+      if (!amPerf[b.am]) return;
+      amPerf[b.am].brands.add(b.name);
+      amPerf[b.am].weeks.add(w.id);
+      STAGES.forEach(function(s){
+        var v = b.stages[s] || 0;
+        amPerf[b.am].stages[s] += v;
+        amPerf[b.am].totalVideos += v;
+      });
+    });
+  });
+
+  // 4. Per-brand performance
+  var brandPerf = {};
+  allW.forEach(function(w){
+    w.brands.forEach(function(b){
+      if (!brandPerf[b.name]) {
+        brandPerf[b.name] = { name:b.name, am:b.am, solution:b.solution,
+          stages:{}, totalVideos:0, weeksActive:0, active:0, credit:0, total:0 };
+        STAGES.forEach(function(s){ brandPerf[b.name].stages[s]=0; });
+      }
+      var bp = brandPerf[b.name];
+      bp.weeksActive++;
+      bp.active += b.active; bp.credit += b.credit; bp.total += b.total;
+      STAGES.forEach(function(s){ var v=b.stages[s]||0; bp.stages[s]+=v; bp.totalVideos+=v; });
+    });
+  });
+  var brandList = Object.values(brandPerf).sort(function(a,b){ return b.totalVideos-a.totalVideos; });
+
+  // 5. Week-over-week trend
+  var wkTrend = allW.map(function(w){
+    var t = w.brands.reduce(function(s,b){ return s+weekTotal(b); }, 0);
+    return { label:w.label, total:t, completed:w.completed };
+  });
+  var maxTrend = Math.max.apply(null, wkTrend.map(function(w){return w.total;}).concat([1]));
+
+  // 6. Stage health classification
+  function stageHealth(s) {
+    var postProd = ['Remixed','Approved','Posted on social'];
+    var inProd   = ['Scripting','Filming','Reshooting / editing','Shipment'];
+    var blocked  = ['No creator','No brief (for this batch)','Creator onboarding'];
+    if (postProd.indexOf(s) > -1) return { cls:'st-on',  label:'Post-production' };
+    if (inProd.indexOf(s)   > -1) return { cls:'',       label:'In production',
+      style:'background:var(--bluebg);color:var(--bluedk)' };
+    if (blocked.indexOf(s)  > -1) return { cls:'st-block',label:'Needs attention' };
+    return { cls:'st-risk', label:'Pending' };
+  }
+
+  // ── HTML ─────────────────────────────────────────
+  // KPI row
+  var remixedTotal  = stageTotals['Remixed'] || 0;
+  var postedTotal   = stageTotals['Posted on social'] || 0;
+  var inProdTotal   = (stageTotals['Scripting']||0)+(stageTotals['Filming']||0)+(stageTotals['Reshooting / editing']||0);
+  var blockedTotal  = (stageTotals['No creator']||0)+(stageTotals['No brief (for this batch)']||0);
+  var completionRate = grandAllT > 0 ? Math.round((postedTotal+remixedTotal)/grandAllT*100) : 0;
+
+  // Stage performance table
+  var stageTableRows = sortedStages.map(function(e) {
+    var s = e[0], total = e[1];
+    if (!total) return '';
+    var pct     = grandAllT > 0 ? Math.round(total/grandAllT*100) : 0;
+    var compV   = stageByStatus.completed[s] || 0;
+    var actV    = stageByStatus.active[s]    || 0;
+    var health  = stageHealth(s);
+    var barW    = Math.round(total/sortedStages[0][1]*100);
+    var stTag   = health.style
+      ? '<span class="stb" style="'+health.style+'">'+health.label+'</span>'
+      : '<span class="stb '+health.cls+'">'+health.label+'</span>';
+    return '<tr style="border-bottom:.5px solid var(--bd)">' +
+      '<td style="padding:7px 10px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<div style="width:3px;height:28px;border-radius:2px;background:'+S_COLOR[s]+';flex-shrink:0"></div>' +
+          '<span style="font-weight:600;font-size:12px">'+s+'</span>' +
+        '</div>' +
+      '</td>' +
+      '<td style="padding:7px 10px">'+stTag+'</td>' +
+      '<td style="padding:7px 10px;font-weight:700;font-size:13px;color:'+S_COLOR[s]+'">'+total+'</td>' +
+      '<td style="padding:7px 10px;font-size:11px;color:var(--tx3)">'+pct+'%</td>' +
+      '<td style="padding:7px 10px;width:140px">' +
+        '<div class="prog-o" style="width:120px"><div class="prog-i" style="width:'+barW+'%;background:'+S_COLOR[s]+'"></div></div>' +
+      '</td>' +
+      '<td style="padding:7px 10px;font-size:11px;color:var(--greendk)">'+compV+'</td>' +
+      '<td style="padding:7px 10px;font-size:11px;color:var(--bluedk)">'+actV+'</td>' +
+    '</tr>';
+  }).filter(Boolean).join('');
+
+  // AM performance cards
+  var amCards = AMS.map(function(a) {
+    var ap = amPerf[a];
+    var topStage = Object.entries(ap.stages).sort(function(x,y){return y[1]-x[1];})[0];
+    var secondStage = Object.entries(ap.stages).sort(function(x,y){return y[1]-x[1];})[1];
+    var remixed = ap.stages['Remixed'] || 0;
+    var posted  = ap.stages['Posted on social'] || 0;
+    var blocked = (ap.stages['No creator']||0)+(ap.stages['No brief (for this batch)']||0);
+    var amTotal = ap.totalVideos || 1;
+    var shareOfTotal = grandAllT > 0 ? Math.round(ap.totalVideos/grandAllT*100) : 0;
+
+    // Mini stage bars for this AM
+    var miniStages = Object.entries(ap.stages)
+      .filter(function(e){ return e[1]>0; })
+      .sort(function(a,b){ return b[1]-a[1]; })
+      .slice(0,5)
+      .map(function(e) {
+        var pct = Math.round(e[1]/amTotal*100);
+        return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0">' +
+          '<span style="font-size:10px;color:var(--tx2);width:80px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(S_SHORT[e[0]]||e[0])+'</span>' +
+          '<div class="prog-o" style="flex:1"><div class="prog-i" style="width:'+pct+'%;background:'+S_COLOR[e[0]]+'"></div></div>' +
+          '<span style="font-size:10px;font-weight:600;color:var(--tx);min-width:22px;text-align:right">'+e[1]+'</span>' +
+        '</div>';
+      }).join('');
+
+    return '<div class="card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">' +
+        '<div>' +
+          '<div style="font-size:14px;font-weight:700;color:'+amColor(a)+'">'+a+'</div>' +
+          '<div style="font-size:11px;color:var(--tx2);margin-top:1px">'+AM_FULL[a]+'</div>' +
+        '</div>' +
+        '<span style="font-size:10px;color:var(--tx3);font-weight:600">'+shareOfTotal+'% of total output</span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">' +
+        '<div style="background:var(--sf2);border-radius:var(--r);padding:8px;text-align:center">' +
+          '<div style="font-size:18px;font-weight:700;color:var(--tx)">'+ap.totalVideos+'</div>' +
+          '<div style="font-size:9px;color:var(--tx3);margin-top:1px">Total videos</div>' +
+        '</div>' +
+        '<div style="background:var(--sf2);border-radius:var(--r);padding:8px;text-align:center">' +
+          '<div style="font-size:18px;font-weight:700;color:var(--tealdk)">'+ap.brands.size+'</div>' +
+          '<div style="font-size:9px;color:var(--tx3);margin-top:1px">Brands</div>' +
+        '</div>' +
+        '<div style="background:'+(blocked>0?'var(--redbg)':'var(--sf2)')+';border-radius:var(--r);padding:8px;text-align:center">' +
+          '<div style="font-size:18px;font-weight:700;color:'+(blocked>0?'var(--reddk)':'var(--tx)')+'">'+blocked+'</div>' +
+          '<div style="font-size:9px;color:var(--tx3);margin-top:1px">Blocked</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sec">Stage breakdown</div>' +
+      miniStages +
+      (topStage && topStage[1] ? '<div style="margin-top:10px;padding:8px 10px;background:var(--sf2);border-radius:var(--r);border-left:3px solid '+S_COLOR[topStage[0]]+'"><div style="font-size:10px;color:var(--tx3)">Top stage</div><div style="font-size:12px;font-weight:600;color:var(--tx);margin-top:2px">'+topStage[0]+' <span style="font-weight:400;color:var(--tx3)">('+topStage[1]+' videos)</span></div></div>' : '') +
+    '</div>';
+  }).join('');
+
+  // Brand performance table
+  var brandTableRows = brandList.slice(0, 20).map(function(b) {
+    var topS = Object.entries(b.stages).sort(function(x,y){return y[1]-x[1];})[0];
+    var cons  = b.total > 0 ? Math.round(b.active/b.total*100) : 0;
+    var blocked = (b.stages['No creator']||0)+(b.stages['No brief (for this batch)']||0);
+    return '<tr style="border-bottom:.5px solid var(--bd)">' +
+      '<td style="padding:6px 10px;font-weight:600;font-size:12px">'+esc(b.name)+'</td>' +
+      '<td style="padding:6px 10px;color:'+amColor(b.am)+';font-weight:700;font-size:11px">'+b.am+'</td>' +
+      '<td style="padding:6px 10px">'+solBadge(b.solution)+'</td>' +
+      '<td style="padding:6px 10px;font-weight:700;color:var(--tx)">'+b.totalVideos+'</td>' +
+      '<td style="padding:6px 10px;font-size:11px">'+b.weeksActive+'</td>' +
+      '<td style="padding:6px 10px">' +
+        (topS&&topS[1] ? '<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:var(--sf2);color:'+S_COLOR[topS[0]]+';font-weight:600">'+(S_SHORT[topS[0]]||topS[0])+'</span>' : '—') +
+      '</td>' +
+      '<td style="padding:6px 10px">' +
+        '<div style="display:flex;align-items:center;gap:5px">' +
+          '<div class="prog-o" style="width:50px"><div class="prog-i" style="width:'+Math.min(cons,100)+'%;background:'+consClr(cons)+'"></div></div>' +
+          '<span style="font-size:11px;font-weight:600;color:'+consClr(cons)+'">'+cons+'%</span>' +
+        '</div>' +
+      '</td>' +
+      '<td style="padding:6px 10px;font-size:11px;color:'+(blocked>0?'var(--reddk)':'var(--tx3)')+'">'+blocked+'</td>' +
+    '</tr>';
+  }).join('');
+
+  // Week trend bar chart (pure CSS, no Chart.js)
+  var trendBars = wkTrend.map(function(w) {
+    var h   = Math.max(Math.round((w.total/maxTrend)*80), w.total>0?4:0);
+    var bg  = w.completed ? 'var(--greendk)' : 'var(--blue)';
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0">' +
+      '<div style="font-size:9px;font-weight:700;color:var(--tx)">'+w.total+'</div>' +
+      '<div style="width:100%;height:'+h+'px;background:'+bg+';border-radius:3px 3px 0 0"></div>' +
+      '<div style="font-size:8px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;text-align:center">'+esc(w.label)+'</div>' +
+    '</div>';
+  }).join('');
+
+  // Top & Bottom performing stages
+  var topStages = sortedStages.filter(function(e){return e[1]>0;}).slice(0,3);
+  var lowStages = sortedStages.filter(function(e){return e[1]>0;}).slice(-3).reverse();
+
+  c.innerHTML =
+    // ── KPI Strip ──
+    '<div class="metrics" style="grid-template-columns:repeat(5,1fr)">' +
+      metric(grandAllT,       'Total stage videos') +
+      metric(remixedTotal,    'Remixed') +
+      metric(postedTotal,     'Posted on social') +
+      metric(inProdTotal,     'In production') +
+      metric(blockedTotal,    'Needs attention', null) +
+    '</div>' +
+
+    // ── Completion rate banner ──
+    '<div style="background:var(--sf);border:.5px solid var(--bd);border-radius:var(--rl);padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
+      '<div>' +
+        '<div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Production throughput rate</div>' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          '<span style="font-size:32px;font-weight:700;color:var(--tx)">'+completionRate+'%</span>' +
+          '<div>' +
+            '<div style="font-size:12px;color:var(--tx2)">Videos remixed or posted vs total in pipeline</div>' +
+            '<div style="font-size:11px;color:var(--tx3);margin-top:2px">'+remixedTotal+' remixed · '+postedTotal+' posted · '+grandAllT+' total</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<div style="text-align:center">' +
+          '<div style="font-size:11px;color:var(--tx3)">Completed wks</div>' +
+          '<div style="font-size:20px;font-weight:700;color:var(--greendk)">'+completed.length+'</div>' +
+        '</div>' +
+        '<div style="width:1px;height:40px;background:var(--bd)"></div>' +
+        '<div style="text-align:center">' +
+          '<div style="font-size:11px;color:var(--tx3)">Active wks</div>' +
+          '<div style="font-size:20px;font-weight:700;color:var(--bluedk)">'+active.length+'</div>' +
+        '</div>' +
+        '<div style="width:1px;height:40px;background:var(--bd)"></div>' +
+        '<div style="text-align:center">' +
+          '<div style="font-size:11px;color:var(--tx3)">Total brands</div>' +
+          '<div style="font-size:20px;font-weight:700;color:var(--tx)">'+brandList.length+'</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ── Week trend + Top/Low stages ──
+    '<div class="two" style="margin-bottom:12px">' +
+      '<div class="card">' +
+        '<div class="ct">Week-by-week output <span style="font-size:10px;color:var(--tx3);font-weight:400;margin-left:6px"><span style="color:var(--greendk)">■</span> completed &nbsp;<span style="color:var(--bluedk)">■</span> active</span></div>' +
+        (wkTrend.length
+          ? '<div style="display:flex;align-items:flex-end;gap:4px;height:100px;padding-bottom:4px">' + trendBars + '</div>'
+          : '<div class="empty" style="padding:12px">No weeks yet</div>') +
+      '</div>' +
+      '<div class="card">' +
+        '<div class="ct">Stage spotlight</div>' +
+        '<div style="display:flex;gap:8px;flex-direction:column">' +
+          '<div>' +
+            '<div style="font-size:10px;font-weight:600;color:var(--greendk);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">Top performing</div>' +
+            topStages.map(function(e){
+              return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:.5px solid var(--bd)">' +
+                '<div style="display:flex;align-items:center;gap:6px"><div style="width:3px;height:16px;border-radius:1px;background:'+S_COLOR[e[0]]+'"></div><span style="font-size:11px;color:var(--tx2)">'+(S_SHORT[e[0]]||e[0])+'</span></div>' +
+                '<span style="font-size:12px;font-weight:700;color:'+S_COLOR[e[0]]+'">'+e[1]+'</span>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+          '<div style="margin-top:4px">' +
+            '<div style="font-size:10px;font-weight:600;color:var(--reddk);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">Needs attention</div>' +
+            lowStages.map(function(e){
+              return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:.5px solid var(--bd)">' +
+                '<div style="display:flex;align-items:center;gap:6px"><div style="width:3px;height:16px;border-radius:1px;background:var(--amber)"></div><span style="font-size:11px;color:var(--tx2)">'+(S_SHORT[e[0]]||e[0])+'</span></div>' +
+                '<span style="font-size:12px;font-weight:700;color:var(--amberdk)">'+e[1]+'</span>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ── Stage performance table ──
+    '<div class="card" style="margin-bottom:12px">' +
+      '<div class="ct">Stage performance breakdown</div>' +
+      '<div style="overflow-x:auto">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+          '<thead><tr style="border-bottom:.5px solid var(--bds)">' +
+            ['Stage','Category','Total videos','Share','Volume','Completed wks','Active wks'].map(function(h){
+              return '<th style="text-align:left;padding:7px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);white-space:nowrap">'+h+'</th>';
+            }).join('') +
+          '</tr></thead>' +
+          '<tbody>'+stageTableRows+'</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>' +
+
+    // ── AM performance ──
+    '<div class="sec">Account manager performance</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:12px">' + amCards + '</div>' +
+
+    // ── Brand performance table ──
+    '<div class="card">' +
+      '<div class="ct">Brand performance (top ' + Math.min(brandList.length, 20) + ')</div>' +
+      '<div style="overflow-x:auto">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:11px">' +
+          '<thead><tr style="border-bottom:.5px solid var(--bds)">' +
+            ['Brand','AM','Solution','Total videos','Weeks active','Top stage','Consumption','Blocked'].map(function(h){
+              return '<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);white-space:nowrap">'+h+'</th>';
+            }).join('') +
+          '</tr></thead>' +
+          '<tbody>'+brandTableRows+'</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
+}
+
+function exportRevopsReport() {
+  var allW = allWeeksAll();
+  if (!allW.length) { alert('No data to export.'); return; }
+
+  var stageTotals = {};
+  STAGES.forEach(function(s){ stageTotals[s]=0; });
+  allW.forEach(function(w){ w.brands.forEach(function(b){ STAGES.forEach(function(s){ stageTotals[s]+=b.stages[s]||0; }); }); });
+  var grandT = Object.values(stageTotals).reduce(function(a,v){return a+v;},0)||1;
+
+  var rows = [
+    ['"Stllr RevOps General Report"'],
+    ['"Generated"', '"'+today()+'"'],
+    ['"Total weeks"', '"'+allW.length+'"'],
+    ['"Completed weeks"', '"'+rollupWeeks().length+'"'],
+    [''],
+    ['"STAGE BREAKDOWN"'],
+    ['"Stage"','"Category"','"Total videos"','"% of total"']
+  ];
+  function stageCategory(s){
+    if (['Remixed','Approved','Posted on social'].indexOf(s)>-1) return 'Post-production';
+    if (['Scripting','Filming','Reshooting / editing','Shipment'].indexOf(s)>-1) return 'In production';
+    if (['No creator','No brief (for this batch)','Creator onboarding'].indexOf(s)>-1) return 'Needs attention';
+    return 'Pending';
+  }
+  Object.entries(stageTotals).sort(function(a,b){return b[1]-a[1];}).forEach(function(e){
+    rows.push(['"'+e[0]+'"','"'+stageCategory(e[0])+'"',e[1],((e[1]/grandT)*100).toFixed(2)+'%']);
+  });
+
+  rows.push(['']);
+  rows.push(['"AM PERFORMANCE"']);
+  rows.push(['"AM"','"Full name"','"Total videos"','"Brands"']);
+  AMS.forEach(function(a){
+    var t=0, br=new Set();
+    allW.forEach(function(w){ w.brands.filter(function(b){return b.am===a;}).forEach(function(b){ t+=weekTotal(b); br.add(b.name); }); });
+    rows.push(['"'+a+'"','"'+AM_FULL[a]+'"',t,br.size]);
+  });
+
+  rows.push(['']);
+  rows.push(['"BRAND PERFORMANCE"']);
+  rows.push(['"Brand"','"AM"','"Solution"','"Total videos"','"Weeks active"']);
+  var brandMap = {};
+  allW.forEach(function(w){ w.brands.forEach(function(b){
+    if (!brandMap[b.name]) brandMap[b.name]={name:b.name,am:b.am,solution:b.solution,total:0,weeks:0};
+    brandMap[b.name].total+=weekTotal(b); brandMap[b.name].weeks++;
+  }); });
+  Object.values(brandMap).sort(function(a,b){return b.total-a.total;}).forEach(function(b){
+    rows.push(['"'+b.name+'"','"'+b.am+'"','"'+b.solution+'"',b.total,b.weeks]);
+  });
+
+  var csv = rows.map(function(r){return r.join(',');}).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'stllr-revops-report-' + today() + '.csv';
+  a.click();
+}
+function vArchive(c) {
+  setTopbar('');
+  var cards = archivedWeeks.map(function(w) {
+    var gT=grandTotal(w), pip=stagePipeline(w);
+    var topStage=Object.entries(pip).sort(function(a,b){return b[1]-a[1];})[0];
+    var topHtml=topStage?'<span style="font-size:11px;color:var(--tx2)">Top stage: <strong style="color:'+(S_COLOR[topStage[0]]||'#888')+'">'+esc(S_SHORT[topStage[0]]||topStage[0])+'</strong> ('+topStage[1]+')</span>':'';
+    return '<div class="card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<div><div style="font-weight:700;font-size:13px">'+esc(w.label)+'</div>' +
+          '<div style="font-size:10px;color:var(--tx3);margin-top:2px">' +
+            '<span style="color:var(--greendk);font-weight:600">✓ Completed '+esc(w.completedAt||'')+'</span>' +
+            ' · '+w.brands.length+' brands · '+gT+' videos</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn btn-sm" onclick="openRenameWeek(\''+w.id+'\')">✏ Rename</button>' +
+          '<button class="btn btn-sm" onclick="reopenFromArchive(\''+w.id+'\')">↩ Reopen</button>' +
+          '<button class="btn btn-sm btn-d" onclick="deleteWeek(\''+w.id+'\')">Delete</button>' +
+        '</div>' +
+      '</div>'+topHtml+
+    '</div>';
+  }).join('');
+  c.innerHTML =
+    '<div class="alert a-info" style="margin-bottom:12px">Completed weeks feed into all rollup views automatically.</div>' +
+    (archivedWeeks.length ? cards : '<div class="empty"><strong>No archived weeks</strong>Complete a week in Daily Ops to see it here.</div>');
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: SETTINGS
+// ════════════════════════════════════════════════════
+function vSettings(c) {
+  setTopbar('');
+  c.innerHTML =
+    '<div style="max-width:480px">' +
+      '<div class="card" style="margin-bottom:11px"><div class="ct">Data summary</div>' +
+        '<p style="font-size:12px;color:var(--tx2);margin-bottom:12px"><strong>'+weeks.length+'</strong> active week(s) &nbsp;·&nbsp; <strong>'+archivedWeeks.length+'</strong> completed &nbsp;·&nbsp; <strong>'+allTasks().length+'</strong> tasks</p>' +
+        '<div style="display:flex;gap:7px;flex-wrap:wrap">' +
+          '<button class="btn" onclick="openExportModal()">Export CSV</button>' +
+          '<button class="btn" onclick="reloadSeed()">Reload sample data</button>' +
+          '<button class="btn btn-d" onclick="clearAll()">Clear all data</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card" style="margin-bottom:11px"><div class="ct">Display</div>' +
+        '<div class="tog-wrap"><div class="tog '+(dark?'on':'')+'" onclick="toggleDark()"></div><span>Dark mode</span></div>' +
+      '</div>' +
+      '<div class="card"><div class="ct">Data flow</div>' +
+        '<p style="font-size:12px;color:var(--tx2);line-height:1.8">' +
+          '<strong>Daily Ops</strong> — edit stage counts inline. Single source of truth.<br>' +
+          '<strong>Mark complete</strong> — freezes week, stores completion date, feeds rollups.<br>' +
+          '<strong>Rollups</strong> — aggregate from completed weeks only (no duplication).<br>' +
+          '<strong>Brand Video Credit</strong> — active · credit · total per brand (current week).<br>' +
+          '<strong>Task Board</strong> — tasks across all weeks, filterable by AM.' +
+        '</p>' +
+      '</div>' +
+    '</div>';
+}
+function clearAll() {
+  if (!confirm('Delete ALL data — weeks, tasks, and archive?\nThis cannot be undone.')) return;
+  weeks=[]; archivedWeeks=[]; activeWeekId='';
+  Object.values(SK).forEach(function(k){ localStorage.removeItem(k); });
+  killCharts(); render();
+}
+function reloadSeed() {
+  if (!confirm('Replace all data with the sample week?')) return;
+  weeks=[makeSeed()]; archivedWeeks=[]; activeWeekId=weeks[0].id;
+  persist(); goView('daily');
+}
+
+// ════════════════════════════════════════════════════
+// VIEW: GUIDE
+// ════════════════════════════════════════════════════
+function vGuide(c) {
+  setTopbar('');
+  function section(icon, title, rows) {
+    var rowsHTML = rows.map(function(r){
+      return '<div class="guide-row"><span style="font-weight:600;color:var(--tx)">'+r[0]+'</span><span style="color:var(--tx2);line-height:1.6">'+r[1]+'</span></div>';
+    }).join('');
+    return '<div class="card" style="margin-bottom:11px"><div class="ct" style="display:flex;align-items:center;gap:7px;font-size:12px"><span>'+icon+'</span>'+title+'</div>'+rowsHTML+'</div>';
+  }
+  c.innerHTML =
+    '<div style="max-width:660px">' +
+    '<div class="alert a-info" style="margin-bottom:13px;line-height:1.7"><strong>Stllr RevOps</strong> is self-contained — all data is stored locally. <strong>Daily Ops</strong> is the source of truth; everything else reads from it.</div>' +
+    section('📋','Daily Ops',[
+      ['What it is','A pivot table matching your Google Sheet: Stages as rows, Brands as columns, video counts in cells.'],
+      ['Editing cells','Click any number and type a new value. Saved automatically.'],
+      ['Add brand','Click + Add brand in the topbar. Fill in name, AM, solution, and credit info.'],
+      ['Edit / remove brand','Use the ✏ and ✕ buttons under each brand column header.'],
+      ['Totals','Weekly Total and % rows auto-calculate and update live.'],
+    ]) +
+    section('📅','Week Management',[
+      ['New week','Click + New week (sidebar or dropdown). Brands clone from current week with counts reset.'],
+      ['Switch weeks','Use the dropdown in the Daily Ops topbar.'],
+      ['Rename week','Click ✏ next to any week in the dropdown, or use the Rename button in Archive.'],
+      ['Mark complete','Click ✓ Mark complete. Stores today\'s date, week becomes read-only, feeds all rollups.'],
+      ['Reopen week','Click Reopen to edit again. Removes from rollups until re-completed.'],
+      ['Delete week','Click 🗑 in the dropdown. Permanent — cannot be undone.'],
+    ]) +
+    section('📊','Rollup Views',[
+      ['Source','Rollups only use completed weeks. Active weeks are excluded to avoid partial data.'],
+      ['Weekly Rollup','Sheet-replica tables per completed week + total bar chart over time.'],
+      ['Monthly Rollup','Aggregates by month. Filter by solution. Monthly bar + top stage per month.'],
+      ['Quarterly Rollup','Solution split pie, AM bar, weekly trend line. Filter by solution and AM.'],
+    ]) +
+    section('💳','Brand Video Credit',[
+      ['Purpose','Tracks Active, Credit, and Total video quotas separately from stage counts.'],
+      ['Edit values','Use ✏ Edit brand in Daily Ops to update Active, Credit, Total.'],
+      ['Consumption','Active ÷ Total × 100. Green ≥ 100%, Amber < 30%, Blue = normal.'],
+    ]) +
+    section('✅','Task Board',[
+      ['Columns','Pending · In Progress · Blocked · Done'],
+      ['Add task','Click + New task or the dashed + at the bottom of any column.'],
+      ['Edit','Click any card to open the edit modal. Change Status to move it between columns.'],
+      ['Due dates','Red = overdue, amber = due today, grey = future.'],
+    ]) +
+    section('⚙️','Settings & Export',[
+      ['Export CSV','Opens a picker to select which weeks to include. Downloads a structured multi-week CSV.'],
+      ['Clear all data','Wipes everything from localStorage. Cannot be undone.'],
+      ['Reload sample data','Restores the original W16 Apr 14 seed data.'],
+      ['Dark mode','Toggle in sidebar footer or Settings.'],
+    ]) +
+    '</div>';
+}
+
+// ════════════════════════════════════════════════════
+// TASK MODAL
+// ════════════════════════════════════════════════════
+function openTaskModal(id) {
+  editTaskId = id || null;
+  var t = id ? allTasks().find(function(x){return x.id===id;}) : null;
+  document.getElementById('tm-title').textContent = t ? 'Edit task' : 'Add task';
+  document.getElementById('tm-save').textContent  = t ? 'Save changes' : 'Add task';
+  document.getElementById('tm-brand').value  = t ? (t.brand||'')  : '';
+  document.getElementById('tm-am').value     = t ? (t.am||'HG')   : 'HG';
+  document.getElementById('tm-desc').value   = t ? (t.desc||'')   : '';
+  document.getElementById('tm-prio').value   = t ? (t.prio||'Normal') : 'Normal';
+  document.getElementById('tm-due').value    = t ? (t.due||'')    : '';
+  document.getElementById('tm-status').value = t ? (t.status||'Pending') : 'Pending';
+  document.getElementById('tm-notes').value  = t ? (t.notes||'')  : '';
+  document.getElementById('task-ov').classList.add('open');
+}
+function saveTask() {
+  var data = {
+    brand:  document.getElementById('tm-brand').value.trim(),
+    am:     document.getElementById('tm-am').value,
+    desc:   document.getElementById('tm-desc').value.trim(),
+    prio:   document.getElementById('tm-prio').value,
+    due:    document.getElementById('tm-due').value,
+    status: document.getElementById('tm-status').value,
+    notes:  document.getElementById('tm-notes').value.trim(),
+    updatedAt: new Date().toISOString()
+  };
+  if (!data.desc) { alert('Description required'); return; }
+  var wk = getWeek(); if (!wk) return;
+  if (editTaskId) {
+    var tw = weeks.find(function(w){return (w.tasks||[]).find(function(t){return t.id===editTaskId;});});
+    if (tw) {
+      var idx = tw.tasks.findIndex(function(t){return t.id===editTaskId;});
+      if (idx >= 0) tw.tasks[idx] = Object.assign({}, tw.tasks[idx], data);
+    }
+  } else {
+    if (!wk.tasks) wk.tasks = [];
+    wk.tasks.unshift(Object.assign({id:uid()}, data));
+  }
+  persist(); closeOv('task-ov'); render();
+}
+
+// ════════════════════════════════════════════════════
+// MODAL UTILITY
+// ════════════════════════════════════════════════════
+function closeOv(id) {
+  document.getElementById(id).classList.remove('open');
+  editBrandId = null; editTaskId = null; renamingWkId = null;
+}
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+(function init() {
+  if (localStorage.getItem(SK.dark) === '1') {
+    dark = true;
+    document.getElementById('app').setAttribute('data-dark','');
+    document.getElementById('dtog').classList.add('on');
+  }
+  document.getElementById('yr-lbl').textContent = new Date().getFullYear() + ' · Full Year';
+  hydrate();
+
+  var modalIds = ['addweek-ov','rename-ov','export-ov','brand-ov','task-ov'];
+  modalIds.forEach(function(id) {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target.id === id) closeOv(id);
+    });
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { modalIds.forEach(closeOv); closeWkDrop(); }
+  });
+  document.addEventListener('click', function(e) {
+    if (wkDropOpen && !e.target.closest('#wk-dd-wrap')) closeWkDrop();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
+Add index.html for GitHub Pages
