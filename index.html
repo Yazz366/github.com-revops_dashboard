@@ -540,46 +540,34 @@ function persist() {
 // AUTO BACKUP TO GOOGLE SHEETS
 // ════════════════════════════════════════════════════
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyP_6FDdn0x2HcZ5uY9YXKgNdXvudZgkbJXxDSI9fWlDTS4f7Rz1lqe6DKPZdreOuW_TA/exec';
+const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1qhp9PHwa7vO0lYfNB6BxvCzVFZIOhC0rnz24wyhv76g/edit';
 let lastBackupTime = null;
 let backupStatus = 'idle'; // idle, syncing, success, error
 
 async function autoBackup() {
-  // Check if URL is configured
-  if (GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-    console.log('⚠️ Backup skipped: Please configure GOOGLE_SCRIPT_URL with your Apps Script deployment URL');
-    backupStatus = 'idle';
-    updateBackupUI();
-    return;
-  }
-  
-  if (backupStatus === 'syncing') return; // Prevent concurrent backups
+  const data = {
+    weeks: weeks,
+    archivedWeeks: archivedWeeks
+  };
   
   backupStatus = 'syncing';
   updateBackupUI();
   
-  const data = {
-    weeks: weeks,
-    archivedWeeks: archivedWeeks,
-    activeWeekId: activeWeekId,
-    timestamp: new Date().toISOString()
-  };
-  
   try {
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' }, // Changed for Apps Script compatibility
-      body: JSON.stringify(data),
-      redirect: 'follow'
+    await fetch("https://script.google.com/macros/s/AKfycbyP_6FDdn0x2HcZ5uY9YXKgNdXvudZgkbJXxDSI9fWlDTS4f7Rz1lqe6DKPZdreOuW_TA/exec", {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(data)
     });
-    
-    // Note: mode: 'no-cors' prevents reading response, so we assume success if no error
+    console.log("Backup sent");
     lastBackupTime = new Date();
     backupStatus = 'success';
-    console.log('✓ Backup successful:', lastBackupTime.toLocaleTimeString());
   } catch (error) {
+    console.error("Backup failed:", error);
     backupStatus = 'error';
-    console.error('✗ Backup failed:', error);
-    console.log('💡 Tip: Make sure your Google Apps Script is deployed as a Web App with "Anyone" access');
   }
   
   updateBackupUI();
@@ -593,11 +581,11 @@ function updateBackupUI() {
     statusEl.innerHTML = '<span style="color:var(--blue)">⟳ Syncing...</span>';
   } else if (backupStatus === 'success' && lastBackupTime) {
     const timeStr = lastBackupTime.toLocaleTimeString();
-    statusEl.innerHTML = '<span style="color:var(--green)">✓ Synced ' + timeStr + '</span>';
+    statusEl.innerHTML = '<a href="' + GOOGLE_SHEET_URL + '" target="_blank" style="color:var(--green);text-decoration:none;display:flex;align-items:center;gap:4px;justify-content:center"><span>✓ Synced ' + timeStr + '</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
   } else if (backupStatus === 'error') {
-    statusEl.innerHTML = '<span style="color:var(--red)">✗ Sync failed</span>';
+    statusEl.innerHTML = '<a href="' + GOOGLE_SHEET_URL + '" target="_blank" style="color:var(--red);text-decoration:none;display:flex;align-items:center;gap:4px;justify-content:center"><span>✗ Sync failed</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
   } else {
-    statusEl.innerHTML = '<span style="color:var(--tx3)">⚙️ Setup required</span>';
+    statusEl.innerHTML = '<a href="' + GOOGLE_SHEET_URL + '" target="_blank" style="color:var(--tx3);text-decoration:none;display:flex;align-items:center;gap:4px;justify-content:center"><span>⚙️ Setup required</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a>';
   }
 }
 
