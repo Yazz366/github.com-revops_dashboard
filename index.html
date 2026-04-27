@@ -529,6 +529,34 @@ let exportSel     = new Set();
 
 const SK = { weeks:'sv5_weeks', arch:'sv5_arch', awk:'sv5_awk', dark:'sv5_dark' };
 
+async function getAllData(){
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbwsEenhzkf3pRSyzcBKNlPqEaylcrSI2S16eO9ESORKeNNCfxOxyyGCcGm1N_QEtL4/exec").then(res => res.json()).then(data => {
+      weeks = data.weeks || [];
+      archivedWeeks = data.archivedWeeks || [];
+      activeWeekId = data.activeWeekId || '';
+      localStorage.setItem(SK.weeks, JSON.stringify(weeks));
+  localStorage.setItem(SK.arch,  JSON.stringify(archivedWeeks));
+  localStorage.setItem(SK.awk,   activeWeekId);
+    });
+   
+    console.log("get Backup");
+    lastBackupTime = new Date();
+    // backupStatus = 'success';
+  } catch (error) {
+    console.error("Backup failed:", error);
+   // backupStatus = 'error';
+  }
+}
+getAllData();
+// ════════════════════════════════════════════════════
+// AUTO BACKUP TO GOOGLE SHEETS
+// ════════════════════════════════════════════════════
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsEenhzkf3pRSyzcBKNlPqEaylcrSI2S16eO9ESORKeNNCfxOxyyGCcGm1N_QEtL4/exec';
+const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1aaazmzh5K6lQmruX52FHwmonWjMY5AzP4cYNCf5vOy8/edit?usp=sharing';
+let lastBackupTime = null;
+let backupStatus = 'idle'; // idle, syncing, success, error
+
 function persist() {
   localStorage.setItem(SK.weeks, JSON.stringify(weeks));
   localStorage.setItem(SK.arch,  JSON.stringify(archivedWeeks));
@@ -536,25 +564,19 @@ function persist() {
   autoBackup(); // Trigger backup after every change
 }
 
-// ════════════════════════════════════════════════════
-// AUTO BACKUP TO GOOGLE SHEETS
-// ════════════════════════════════════════════════════
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyP_6FDdn0x2HcZ5uY9YXKgNdXvudZgkbJXxDSI9fWlDTS4f7Rz1lqe6DKPZdreOuW_TA/exec';
-const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1qhp9PHwa7vO0lYfNB6BxvCzVFZIOhC0rnz24wyhv76g/edit';
-let lastBackupTime = null;
-let backupStatus = 'idle'; // idle, syncing, success, error
 
 async function autoBackup() {
   const data = {
-    weeks: weeks,
-    archivedWeeks: archivedWeeks
+    weeks: JSON.parse(localStorage.getItem(SK.weeks)) || [],
+    archivedWeeks: JSON.parse(localStorage.getItem(SK.arch)) || [],
+    activeWeekId: localStorage.getItem(SK.awk)
   };
   
   backupStatus = 'syncing';
   updateBackupUI();
   
   try {
-    await fetch("https://script.google.com/macros/s/AKfycbyP_6FDdn0x2HcZ5uY9YXKgNdXvudZgkbJXxDSI9fWlDTS4f7Rz1lqe6DKPZdreOuW_TA/exec", {
+    await fetch("https://script.google.com/macros/s/AKfycbwsEenhzkf3pRSyzcBKNlPqEaylcrSI2S16eO9ESORKeNNCfxOxyyGCcGm1N_QEtL4/exec", {
       method: "POST",
       mode: "no-cors",
       headers: {
