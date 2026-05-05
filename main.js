@@ -521,7 +521,6 @@ let renamingWkId = null;
 let wkDropOpen = false;
 let exportSel = new Set();
 
-const SK = { weeks: 'sv5_weeks', arch: 'sv5_arch', awk: 'sv5_awk', dark: 'sv5_dark' };
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKo9KO9gGTzfhrxIR1vUlqfnoR_ExQd1jwBffTmqKOBWcROOLlUdWMsiZLAM1ZQFg3/exec';
 const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1aaazmzh5K6lQmruX52FHwmonWjMY5AzP4cYNCf5vOy8/edit?usp=sharing';
@@ -529,43 +528,37 @@ let lastBackupTime = null;
 let backupStatus = 'idle'; // idle, syncing, success, error
 
 async function getAllData() {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) overlay.classList.remove('hidden');
+  
   try {
-      await fetch(GOOGLE_SCRIPT_URL)
-      .then((res) => res.json())
-      .then((data) => {
-        weeks = data.weeks || [];
-        archivedWeeks = data.archivedWeeks || [];
-        activeWeekId = data.activeWeekId || '';
-        localStorage.clear();
-        localStorage.setItem(SK.weeks, JSON.stringify(weeks));
-        localStorage.setItem(SK.arch, JSON.stringify(archivedWeeks));
-        localStorage.setItem(SK.awk, activeWeekId);
-      });
-
-    console.log('get Backup');
+    const data = await fetch(GOOGLE_SCRIPT_URL).then((res) => res.json());
+    weeks = data.weeks || [];
+    archivedWeeks = data.archivedWeeks || [];
+    activeWeekId = data.activeWeekId || '';
+    
+    if (!weeks.length) {
+      weeks = [makeSeed()];
+    }
+    if (!activeWeekId && weeks[0]) {
+      activeWeekId = weeks[0].id;
+    }
+    
+    console.log('Data loaded from Google Sheets');
   } catch (error) {
-    console.error('Backup failed:', error);
+    console.error('Failed to load data from Google Sheets:', error);
+    weeks = [makeSeed()];
+    activeWeekId = weeks[0].id;
+  } finally {
+    if (overlay) overlay.classList.add('hidden');
   }
 }
-getAllData();
 // ════════════════════════════════════════════════════
 // AUTO BACKUP TO GOOGLE SHEETS
 // ════════════════════════════════════════════════════
 
 function persist() {
-  let oldWeeks = JSON.parse(localStorage.getItem(SK.weeks)) || null;
-  let oldArch = JSON.parse(localStorage.getItem(SK.archivedWeeks)) || null;
-  let oldId = JSON.parse(localStorage.getItem(SK.activeWeekId)) || null;
-  if (!oldWeeks) {
-    localStorage.setItem(SK.weeks, JSON.stringify(weeks));
-  }
-  if (!oldArch) {
-    localStorage.setItem(SK.arch, JSON.stringify(archivedWeeks));
-  }
-  if (!oldId) {
-    localStorage.setItem(SK.awk, activeWeekId);
-  }
-  autoBackup(); // Trigger backup after every change
+  autoBackup();
 }
 
 async function autoBackup() {
@@ -634,23 +627,7 @@ function manualBackup() {
   }
   autoBackup();
 }
-function hydrate() {
-  try {
-    weeks = JSON.parse(localStorage.getItem(SK.weeks) || 'null') || null;
-  } catch (e) {
-    weeks = null;
-  }
-  try {
-    archivedWeeks = JSON.parse(localStorage.getItem(SK.arch) || '[]');
-  } catch (e) {
-    archivedWeeks = [];
-  }
-  if (!weeks) {
-    weeks = [makeSeed()];
-  }
-  activeWeekId = localStorage.getItem(SK.awk) || (weeks[0] ? weeks[0].id : '');
-  if (!weeks.find((w) => w.id === activeWeekId)) activeWeekId = weeks[0] ? weeks[0].id : '';
-}
+
 
 // ════════════════════════════════════════════════════
 // UTILITIES
@@ -806,7 +783,6 @@ function toggleDark() {
   dark = !dark;
   document.getElementById('app').toggleAttribute('data-dark', dark);
   document.getElementById('dtog').classList.toggle('on', dark);
-  localStorage.setItem(SK.dark, dark ? '1' : '0');
   killCharts();
   render();
 }
@@ -3182,9 +3158,7 @@ function clearAll() {
   weeks = [];
   archivedWeeks = [];
   activeWeekId = '';
-  Object.values(SK).forEach(function (k) {
-    localStorage.removeItem(k);
-  });
+  autoBackup();
   killCharts();
   render();
 }
@@ -3220,7 +3194,7 @@ function vGuide(c) {
   }
   c.innerHTML =
     '<div style="max-width:660px">' +
-    '<div class="alert a-info" style="margin-bottom:13px;line-height:1.7"><strong>Stllr RevOps</strong> is self-contained — all data is stored locally. <strong>Daily Ops</strong> is the source of truth; everything else reads from it.</div>' +
+    '<div class="alert a-info" style="margin-bottom:13px;line-height:1.7"><strong>Stllr RevOps</strong> stores all data in Google Sheets. <strong>Daily Ops</strong> is the source of truth; everything else reads from it.</div>' +
     section('📋', 'Daily Ops', [
       ['What it is', 'A pivot table matching your Google Sheet: Stages as rows, Brands as columns, video counts in cells.'],
       ['Editing cells', 'Click any number and type a new value. Saved automatically.'],
@@ -3255,7 +3229,7 @@ function vGuide(c) {
     ]) +
     section('⚙️', 'Settings & Export', [
       ['Export CSV', 'Opens a picker to select which weeks to include. Downloads a structured multi-week CSV.'],
-      ['Clear all data', 'Wipes everything from localStorage. Cannot be undone.'],
+      ['Clear all data', 'Wipes everything from Google Sheets. Cannot be undone.'],
       ['Reload sample data', 'Restores the original W16 Apr 14 seed data.'],
       ['Dark mode', 'Toggle in sidebar footer or Settings.'],
     ]) +
@@ -3334,14 +3308,10 @@ function closeOv(id) {
 // ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
-(function init() {
-  if (localStorage.getItem(SK.dark) === '1') {
-    dark = true;
-    document.getElementById('app').setAttribute('data-dark', '');
-    document.getElementById('dtog').classList.add('on');
-  }
+async function init() {
+  await getAllData();
+
   document.getElementById('yr-lbl').textContent = new Date().getFullYear() + ' · Full Year';
-  hydrate();
 
   var modalIds = ['addweek-ov', 'rename-ov', 'export-ov', 'brand-ov', 'task-ov'];
   modalIds.forEach(function (id) {
@@ -3370,4 +3340,6 @@ function closeOv(id) {
 
   console.log('✓ Auto-backup enabled: syncs every 5 minutes');
   console.log('→ Update GOOGLE_SCRIPT_URL in code with your Apps Script deployment URL');
-})();
+}
+
+init();
