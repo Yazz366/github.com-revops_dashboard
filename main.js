@@ -658,7 +658,7 @@ function rollupWeeks() {
   return archivedWeeks.slice().sort((a, b) => (a.weekNum || 0) - (b.weekNum || 0));
 }
 function allWeeksAll() {
-  return [...weeks, ...archivedWeeks].sort((a, b) => (a.weekNum || 0) - (b.weekNum || 0));
+  return [...weeks].sort((a, b) => (a.weekNum || 0) - (b.weekNum || 0));
 }
 
 function labelExists(label, excludeId) {
@@ -1109,9 +1109,7 @@ function completeWeek(id) {
   if (ei >= 0) archivedWeeks[ei] = snapshot;
   else archivedWeeks.unshift(snapshot);
 
-  weeks = weeks.filter(function (x) {
-    return x.id !== id;
-  });
+
 
   persist();
   killCharts();
