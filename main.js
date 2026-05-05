@@ -538,7 +538,7 @@ async function getAllData() {
     activeWeekId = data.activeWeekId || '';
     
     if (!weeks.length) {
-      weeks = [makeSeed()];
+      weeks = [];
     }
     if (!activeWeekId && weeks[0]) {
       activeWeekId = weeks[0].id;
@@ -547,7 +547,7 @@ async function getAllData() {
     console.log('Data loaded from Google Sheets');
   } catch (error) {
     console.error('Failed to load data from Google Sheets:', error);
-    weeks = [makeSeed()];
+    weeks = [];
     activeWeekId = weeks[0].id;
   } finally {
     if (overlay) overlay.classList.add('hidden');
