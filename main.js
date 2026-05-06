@@ -77,7 +77,7 @@ const VSUBS = {
 // ════════════════════════════════════════════════════
 function makeSeed() {
   return {
-    id: 'seed1',
+    id: Date.now().toString(),
     label: 'W16 Apr 14',
     year: 2026,
     weekNum: 16,
@@ -3162,9 +3162,7 @@ function clearAll() {
 }
 function reloadSeed() {
   if (!confirm('Replace all data with the sample week?')) return;
-  weeks = [makeSeed()];
-  archivedWeeks = [];
-  activeWeekId = weeks[0].id;
+  weeks = [...weeks,makeSeed()];
   persist();
   goView('daily');
 }
